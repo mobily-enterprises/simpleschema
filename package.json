@@ -1,0 +1,24 @@
+{
+  "name": "simpleschema",
+  "description": "The simplest, most extendible schema class you will ever come across",
+  "keywords": [
+    "javascript",
+    "database",
+    "db",
+    "schema",
+    "validation"
+  ],
+  "main" : "SimpleSchema.js",
+  "version": "0.0.1",
+  "private": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mercmobily/SimpleSchema.git"
+  },
+  "author": {
+    "name": "Tony Mobily"
+  },
+  "dependencies": {
+    "simpledeclare": "*"
+  }
+}
