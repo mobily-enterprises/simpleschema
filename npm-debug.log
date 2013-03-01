@@ -1,0 +1,96 @@
+0 info it worked if it ends with ok
+1 verbose cli [ 'node', '/usr/local/bin/npm', 'publish' ]
+2 info using npm@1.1.59
+3 info using node@v0.8.2
+4 verbose publish [ '.' ]
+5 verbose read json /home/merc/Synced/Development/Bookings/libs/server/node_modules/simpleschema/package.json
+6 verbose cache add [ '.', null ]
+7 silly cache add name=undefined spec="." args=[".",null]
+8 verbose parsed url { pathname: '.', path: '.', href: '.' }
+9 silly lockFile 3a52ce78- .
+10 verbose lock . /home/merc/.npm/3a52ce78-.lock
+11 verbose read json package.json
+12 verbose tar pack [ '/home/merc/tmp/npm-16818/1362112545147-0.8978291254024953/tmp.tgz',
+12 verbose tar pack   '.' ]
+13 verbose tarball /home/merc/tmp/npm-16818/1362112545147-0.8978291254024953/tmp.tgz
+14 verbose folder .
+15 info prepublish simpleschema@0.0.1
+16 silly lockFile 2240ded8-45147-0-8978291254024953-tmp-tgz /home/merc/tmp/npm-16818/1362112545147-0.8978291254024953/tmp.tgz
+17 verbose lock /home/merc/tmp/npm-16818/1362112545147-0.8978291254024953/tmp.tgz /home/merc/.npm/2240ded8-45147-0-8978291254024953-tmp-tgz.lock
+18 silly lockFile 2240ded8-45147-0-8978291254024953-tmp-tgz /home/merc/tmp/npm-16818/1362112545147-0.8978291254024953/tmp.tgz
+19 verbose tar unpack /home/merc/tmp/npm-16818/1362112545147-0.8978291254024953/tmp.tgz
+20 silly lockFile ee63e03b-45147-0-8978291254024953-package /home/merc/tmp/npm-16818/1362112545147-0.8978291254024953/package
+21 verbose lock /home/merc/tmp/npm-16818/1362112545147-0.8978291254024953/package /home/merc/.npm/ee63e03b-45147-0-8978291254024953-package.lock
+22 silly gunzTarPerm modes [ '777', '666' ]
+23 silly gunzTarPerm extractEntry package.json
+24 silly gunzTarPerm modified mode [ 'package.json', 436, 438 ]
+25 silly gunzTarPerm extractEntry README.md
+26 silly gunzTarPerm modified mode [ 'README.md', 436, 438 ]
+27 silly gunzTarPerm extractEntry SimpleSchema.js
+28 silly gunzTarPerm modified mode [ 'SimpleSchema.js', 436, 438 ]
+29 verbose read json /home/merc/tmp/npm-16818/1362112545147-0.8978291254024953/package/package.json
+30 silly lockFile ee63e03b-45147-0-8978291254024953-package /home/merc/tmp/npm-16818/1362112545147-0.8978291254024953/package
+31 verbose from cache /home/merc/tmp/npm-16818/1362112545147-0.8978291254024953/package/package.json
+32 verbose tar pack [ '/home/merc/.npm/simpleschema/0.0.1/package.tgz',
+32 verbose tar pack   '/home/merc/tmp/npm-16818/1362112545147-0.8978291254024953/package' ]
+33 verbose tarball /home/merc/.npm/simpleschema/0.0.1/package.tgz
+34 verbose folder /home/merc/tmp/npm-16818/1362112545147-0.8978291254024953/package
+35 silly lockFile 133502b7-m-simpleschema-0-0-1-package-tgz /home/merc/.npm/simpleschema/0.0.1/package.tgz
+36 verbose lock /home/merc/.npm/simpleschema/0.0.1/package.tgz /home/merc/.npm/133502b7-m-simpleschema-0-0-1-package-tgz.lock
+37 silly lockFile 133502b7-m-simpleschema-0-0-1-package-tgz /home/merc/.npm/simpleschema/0.0.1/package.tgz
+38 silly lockFile 7b005d7a-c-npm-simpleschema-0-0-1-package /home/merc/.npm/simpleschema/0.0.1/package
+39 verbose lock /home/merc/.npm/simpleschema/0.0.1/package /home/merc/.npm/7b005d7a-c-npm-simpleschema-0-0-1-package.lock
+40 silly lockFile 7b005d7a-c-npm-simpleschema-0-0-1-package /home/merc/.npm/simpleschema/0.0.1/package
+41 verbose tar unpack /home/merc/.npm/simpleschema/0.0.1/package.tgz
+42 silly lockFile 7b005d7a-c-npm-simpleschema-0-0-1-package /home/merc/.npm/simpleschema/0.0.1/package
+43 verbose lock /home/merc/.npm/simpleschema/0.0.1/package /home/merc/.npm/7b005d7a-c-npm-simpleschema-0-0-1-package.lock
+44 silly gunzTarPerm modes [ '777', '666' ]
+45 silly gunzTarPerm extractEntry package.json
+46 silly gunzTarPerm extractEntry README.md
+47 silly gunzTarPerm extractEntry SimpleSchema.js
+48 verbose read json /home/merc/.npm/simpleschema/0.0.1/package/package.json
+49 silly lockFile 7b005d7a-c-npm-simpleschema-0-0-1-package /home/merc/.npm/simpleschema/0.0.1/package
+50 silly shasum updated bytes 3278
+51 info shasum df35d1b554731736af32e202085dabdb4d07b69a
+51 info shasum /home/merc/.npm/simpleschema/0.0.1/package.tgz
+52 verbose from cache /home/merc/.npm/simpleschema/0.0.1/package/package.json
+53 verbose chmod /home/merc/.npm/simpleschema/0.0.1/package.tgz 666
+54 verbose chown /home/merc/.npm/simpleschema/0.0.1/package.tgz [ 1000, 1000 ]
+55 silly lockFile 3a52ce78- .
+56 silly publish { name: 'simpleschema',
+56 silly publish   description: 'The simplest, most extendible schema class you will ever come across',
+56 silly publish   keywords: [ 'javascript', 'database', 'db', 'schema', 'validation' ],
+56 silly publish   main: 'SimpleSchema.js',
+56 silly publish   version: '0.0.1',
+56 silly publish   private: false,
+56 silly publish   repository:
+56 silly publish    { type: 'git',
+56 silly publish      url: 'https://github.com/mercmobily/SimpleSchema.git' },
+56 silly publish   author: { name: 'Tony Mobily' },
+56 silly publish   dependencies: { simpledeclare: '*' },
+56 silly publish   readme: 'simpleDeclare\n=============\n\nThis is a super-simplified implementation of `declare()`, which will help you create Javascript classes^H^H^H^H^H^Hconstructor functions while keeping you code neat.\n\n\nHere is a code snipset that shows 100% of its features:\n\n    var BaseClass = declare( null, {\n\n      constructor: function( options){\n        this.options = options;\n\n        if( this.options.something ){\n          this.water = true;\n          this.fire = true;\n        }\n      },\n\n      assignA: function(a){\n        this.a = a;\n      },\n    });\n\n\n    var DerivedClass = declare( BaseClass, {\n\n      constructor: function( options ){\n        if( options.fancy ){\n          this.fancy = true;\n        }\n      },  \n\n      assignA: function(a){\n        this.inherited( arguments );\n        this.a ++;\n      },\n\n      assignB: function(b){\n        this.b = b;\n      },\n\n    });\n\n\n* Only single inheritance is supported. For multiple inheritance, just inherit multiple times\n\n* The function `this.inherited( arguments )` will call the constructor of the first matching class going up the chain, even if its direct parent doesn\'t implement that method. So, if class `A` defines `m()`, and class `B` inherits from `A`, and class `C` inherits from `B`, then `C` can call `this.inherited(arguments)` in `m()` and expect `A`\'s `m()` to be called even if `B` doesn\'t implement `m()` at all. (You may need to read this sentence a couple of times before it makes perfect sense)\n\n* You can inherit from "normal" classes not defined by `declare()`.\n\n\n# The problem it solves\n\nNode.js provides a very basic function to implement classes that inherit from others: `util.inherits()`. This is hardly enough: code often ends up looking like this:\n\n    function BaseClass( options ){\n      this.options = options;\n    \n      if( this.options.something ){\n        this.water = true;\n        this.fire = true;\n      }\n    }\n    \n    BaseClass.prototype.assignA = function(a){\n      this.a = a;\n    }\n    \n    function DerivedClass( options ){\n    \n      // Call the base class\' constructor\n      BaseClass.call( this, options );\n    \n      if( options.fancy ){\n        this.fancy = true;\n      }\n    }\n    \n    util.inherits( DerivedClass, BaseClass );\n    \n    DerivedClass.prototype.assignA = function(a){\n      BaseClass.prototype.assignA.call( this, a);\n      this.a ++;\n    }\n    \n    DerivedClass.prototype.assignB = function(b){\n      this.b = b;\n    }\n\nMy problems with this code:\n\n* It\'s unreadable. It\'s not clear, by reading it, what is what. It\'s easy enough here, but try to look at this code where there are several prototype functions and several inherited objects...\n\n* The order in which you call `util.inherits()` matters -- a lot. You must remember to call it _before_ you define any custom prototypes\n\n* Defining the prototype one by one by hand like that is hardly ideal\n\n* You need to call the superclass\' constructor by hand, manually\n\n* If you want to call a parent\'s method from a child\'s method, you need to do so manually. If your parent doesn\'t implement that method, but the parent\'s parents do, you are out of luck.\n\nThe equivalent to the code above, which is also the example code provided, is:\n\n\n    var BaseClass = declare( null, {\n\n      constructor: function( options){\n        this.options = options;\n\n        if( this.options.something ){\n          this.water = true;\n          this.fire = true;\n        }\n      },\n\n      assignA: function(a){\n        this.a = a;\n      },\n    });\n\n\n    var DerivedClass = declare( BaseClass, {\n\n      constructor: function( options ){\n        if( options.fancy ){\n          this.fancy = true;\n        }\n      },  \n\n      assignA: function(a){\n        this.inherited( arguments );\n        this.a ++;\n      },\n\n      assignB: function(b){\n        this.b = b;\n      },\n\n    });\n\n\n\nCan you see the improvement?\n\n\n',
+56 silly publish   _id: 'simpleschema@0.0.1',
+56 silly publish   dist: { shasum: 'df35d1b554731736af32e202085dabdb4d07b69a' } }
+57 verbose url raw simpleschema
+58 verbose url resolving [ 'https://registry.npmjs.org/', './simpleschema' ]
+59 verbose url resolved https://registry.npmjs.org/simpleschema
+60 info retry registry request attempt 1 at 12:35:45
+61 http PUT https://registry.npmjs.org/simpleschema
+62 http 409 https://registry.npmjs.org/simpleschema
+63 verbose url raw simpleschema
+64 verbose url resolving [ 'https://registry.npmjs.org/', './simpleschema' ]
+65 verbose url resolved https://registry.npmjs.org/simpleschema
+66 info retry registry request attempt 1 at 12:35:47
+67 http GET https://registry.npmjs.org/simpleschema
+68 http 200 https://registry.npmjs.org/simpleschema
+69 error publish fail Cannot publish over existing version.
+69 error publish fail Bump the 'version' field, set the --force flag, or
+69 error publish fail     npm unpublish 'simpleschema@0.0.1'
+69 error publish fail and try again
+70 error System Linux 3.5.0-23-generic
+71 error command "node" "/usr/local/bin/npm" "publish"
+72 error cwd /home/merc/Synced/Development/Bookings/libs/server/node_modules/simpleschema
+73 error node -v v0.8.2
+74 error npm -v 1.1.59
+75 error code EPUBLISHCONFLICT
+76 verbose exit [ 1, true ]
