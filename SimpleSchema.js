@@ -65,6 +65,18 @@ var SimpleSchema = declare( null, {
     return  p.value.substr( 0, p.definitionValue );
   },
 
+  defaultTypeParam: function( p ){
+    if( typeof( p.value ) === 'undefined' ){
+      p.object[ p.fieldName ] = p.definitionValue;
+    }
+  },
+
+  serializeTypeParam: function( p ){
+    if( p.value ){
+      p.object[ p.fieldName ] = JSON.stringify( p.value );
+    }
+  },
+
   requiredTypeParam: function( p ){
 
     if( typeof( p.object[ p.fieldName ]) === 'undefined'){
@@ -183,6 +195,11 @@ var SimpleSchema = declare( null, {
       cb( null, true );
     }
   },
+
+
+  clone: function( obj ){
+    return  JSON.parse( JSON.stringify( obj ) );
+  }
 
 });
 
