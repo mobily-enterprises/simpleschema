@@ -53,7 +53,6 @@ Note:
  * `required` will fail if the _original_ object's corresponding attribute was `undefined` and will never fail for arrays
  * `notEmpty` will fail if the _original_ object's corresponding attribute was `v == ''` and will never fail for arrays
 
-
 ## Casting
     
 The `cast()` function takes an object and casts its values to the right type for the schema. This means that `"10"` (the string) will become `10` (the number) if the type is "number". Since `cast()` changes the actual object, it's best to make a copy. You should do so using `Schema.clone()`.
@@ -62,7 +61,7 @@ The `cast()` function takes an object and casts its values to the right type for
 
 The `check()` function takes as parameters an object, the object _before_ casting, an array variable, and an options object. `check()` will also manipulate the object as needed (assignin defaults, etc.).
 
-The array variable will be populated by the `check()` function in case of problems. So, your code should check if the passed variable has grown after the `check()`.
+The `errors` array variable will be populated by the `check()` function in case of problems. So, your code should check if the passed variable has grown after the `check()`.
 
 
 ## Behind the scenes
