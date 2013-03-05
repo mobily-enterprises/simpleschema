@@ -204,6 +204,9 @@ var SimpleSchema = declare( null, {
 });
 
 
+SimpleSchema.clone = function( obj ){
+  return  JSON.parse( JSON.stringify( obj ) );
+}
 
 exports = module.exports = SimpleSchema;
 

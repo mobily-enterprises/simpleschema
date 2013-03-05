@@ -1,146 +1,129 @@
-simpleDeclare
+SimpleSchema
 =============
 
-This is a super-simplified implementation of `declare()`, which will help you create Javascript classes^H^H^H^H^H^Hconstructor functions while keeping you code neat.
+SimpleSchema is a _simple_ library to cast, and validate, objects.
+It uses [SimpleDeclare - Github](https://github.com/mercmobily/simpleDeclare) in order to define a class. I strongly recommend using SimpleDeclare to create derivative schemas (which are very easy to create).
+
+Here is how to use it:
 
 
-Here is a code snipset that shows 100% of its features:
+    var Schema = require( 'simpleschema' );
+    var errors = [];
 
-    var BaseClass = declare( null, {
-
-      constructor: function( options){
-        this.options = options;
-
-        if( this.options.something ){
-          this.water = true;
-          this.fire = true;
-        }
-      },
-
-      assignA: function(a){
-        this.a = a;
-      },
+    personSchema = new Schema( {
+      name: { type: 'string', trim: 20 },
+      age: { type: 'number', default: 30, max: 140 },
+      rank: { type: 'number', default: 99, max: 99 },
     });
 
+    // Create an object
+    var obj = { name: "Tony", age: "30" };
 
-    var DerivedClass = declare( BaseClass, {
+    // Make a copy before casting
+    newObj = Schema.clone( obj );
+    
+    // Cast the object, assigning defaults etc.
+    personSchema.cast( newObj ); // { name: "Tony", age: 30 } 
+    personSchema.check( newObj, obj, errors, { myOption: 1 } ); //  { name: "Tony", age: 30, rank: 99 }
+    
+    if( errors.length ){
+      // ...
+    }
 
-      constructor: function( options ){
-        if( options.fancy ){
-          this.fancy = true;
-        }
-      },  
 
-      assignA: function(a){
-        this.inherited( arguments );
-        this.a ++;
-      },
+## The schema description
 
-      assignB: function(b){
-        this.b = b;
-      },
+Here is a schema which covers _every_ single possibility in terms of types and parameters (parameters will not be repeated):
 
+    schema = new Schema( {
+      name:    { type: 'string', default: 'something', uppercase: true, trim: 30, required: true, notEmpty: true },
+      surname: { type: 'string', lowercase: true },
+      data:    { type: 'string', serialize: true },
+      age:     { type: 'number', default: min: 10, max: 20 },
+      id:      { type: 'id' },
+      date:    { type: 'date' },
+      list:    { type: array },
     });
 
+Note:
 
-* Only single inheritance is supported. For multiple inheritance, just inherit multiple times
+ * The order matters. Parameters are processed in the order they are encountered. If you have `{ default: 'something', uppercase: true }`, the result will be `Something`.
+ * `min`, `max` only apply to `number`s
+ * `uppercase`, `lowercase`, `trim` only apply to `string`s
+ * `required` will fail if the _original_ object's corresponding attribute was `undefined` and will never fail for arrays
+ * `notEmpty` will fail if the _original_ object's corresponding attribute was == '' and will never fail for arrays
 
-* The function `this.inherited( arguments )` will call the constructor of the first matching class going up the chain, even if its direct parent doesn't implement that method. So, if class `A` defines `m()`, and class `B` inherits from `A`, and class `C` inherits from `B`, then `C` can call `this.inherited(arguments)` in `m()` and expect `A`'s `m()` to be called even if `B` doesn't implement `m()` at all. (You may need to read this sentence a couple of times before it makes perfect sense)
 
-* You can inherit from "normal" classes not defined by `declare()`.
-
-
-# The problem it solves
-
-Node.js provides a very basic function to implement classes that inherit from others: `util.inherits()`. This is hardly enough: code often ends up looking like this:
-
-    function BaseClass( options ){
-      this.options = options;
+## Casting
     
-      if( this.options.something ){
-        this.water = true;
-        this.fire = true;
-      }
-    }
-    
-    BaseClass.prototype.assignA = function(a){
-      this.a = a;
-    }
-    
-    function DerivedClass( options ){
-    
-      // Call the base class' constructor
-      BaseClass.call( this, options );
-    
-      if( options.fancy ){
-        this.fancy = true;
-      }
-    }
-    
-    util.inherits( DerivedClass, BaseClass );
-    
-    DerivedClass.prototype.assignA = function(a){
-      BaseClass.prototype.assignA.call( this, a);
-      this.a ++;
-    }
-    
-    DerivedClass.prototype.assignB = function(b){
-      this.b = b;
-    }
+The `cast()` function takes an object and casts its values to the right type for the schema. This means that `"10"` (the string) will become `10` (the number) if the type is "number". Since `cast()` changes the actual object, it's best to make a copy. You should do so using `Schema.clone()`.
 
-My problems with this code:
+## Checking
 
-* It's unreadable. It's not clear, by reading it, what is what. It's easy enough here, but try to look at this code where there are several prototype functions and several inherited objects...
+The `check()` function takes as parameters an object, the object _before_ casting, an array variable, and an options object. `check()` will also manipulate the object as needed (assignin defaults, etc.).
 
-* The order in which you call `util.inherits()` matters -- a lot. You must remember to call it _before_ you define any custom prototypes
-
-* Defining the prototype one by one by hand like that is hardly ideal
-
-* You need to call the superclass' constructor by hand, manually
-
-* If you want to call a parent's method from a child's method, you need to do so manually. If your parent doesn't implement that method, but the parent's parents do, you are out of luck.
-
-The equivalent to the code above, which is also the example code provided, is:
+The array variable will be populated by the `check()` function in case of problems. So, your code should check if the passed variable has grown after the `check()`.
 
 
-    var BaseClass = declare( null, {
+## Behind the scenes
 
-      constructor: function( options){
-        this.options = options;
+The Schema class is based on named helper functions.
 
-        if( this.options.something ){
-          this.water = true;
-          this.fire = true;
-        }
-      },
+For casting, for example, when `cast()` encounters:
 
-      assignA: function(a){
-        this.a = a;
-      },
+    surname: { type: 'string', lowercase: true },
+
+It looks into `this` for a function called `stringTypeCast`. It finds it: so it runs:
+
+    stringTypeCast: function( definition, value){ return value.toString(); },
+
+This applies to all of the casting functions.
+
+Parameters are based on the same principle. So, when check() encounters:
+ 
+    surname: { type: 'string', lowercase: true },
+
+it will look for `this.lowercaseTypeParam()`, which is:
+
+    lowercaseTypeParam: function( p ){
+        if( typeof( p.value ) !== 'string' ) return;
+        return  p.value.toLowerCase();
+    }, 
+
+
+## Extending a schema
+
+The basic schema is there to be extended. It's very easy to define new types and new parameters: all you need to do is create a new constructor that inherits from Schema:
+
+
+    var Schema = require( 'simpleschema' );
+    var NewSchema = declare( Schema, {
+
+      incrementByTypeParam: function( p ){
+        if( typeof( p.value ) !== 'number' ) return;
+        return p.value = p.value + p.definitionValue;
+      }, 
     });
 
+(_NOTE_: if the function returns anything but `undefined`, the object's field is assigned to what is returned. So, if you don't want to change the object's value, just `return`.)
 
-    var DerivedClass = declare( BaseClass, {
+Now in your schema you can have entries like:
 
-      constructor: function( options ){
-        if( options.fancy ){
-          this.fancy = true;
-        }
-      },  
-
-      assignA: function(a){
-        this.inherited( arguments );
-        this.a ++;
-      },
-
-      assignB: function(b){
-        this.b = b;
-      },
-
-    });
+    age: { type: 'number', incrementBy: 10 },
 
 
+The `TypeParam` function has a parameter, `p`, which has anything you might possibly need for processing:
 
-Can you see the improvement?
+ *  `value`: The value of that field for the passed object
+ *  `object`: The full passed object
+ *  `objectBeforeCast: The full "before-cast" passed object
+ *  `fieldName: The make of the field
+ *  `definition`: The full definition for that schema field (`{ type: 'number', incrementBy: 10 }`)
+ *  `definitionValue`: The value for this particular parameter in the definition
+ *  `schema`: The full schema,
+ *  `errors`: The array that will be "augmented" with errors
+ *  `options`: Options passed to the `check()` function
+
+
 
 
