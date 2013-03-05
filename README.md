@@ -81,6 +81,28 @@ As a result, when there is an error the module will simply `push()` to `errors`:
 
 If the object has a field that is not in the schema, it will add an error for that field in `errors`.
 
+## Cleaning up
+
+The module allows you to clean up all fields with a specific attribute set as a non-falsy value:
+
+    var Schema = require( 'simpleschema' );
+    var errors = [];
+
+    personSchema = new Schema( {
+      name: { type: 'string', trim: 20 },
+      age: { type: 'number', default: 30, max: 140 },
+      rank: { type: 'number', default: 99, max: 99, doNotSave: true },
+    });
+
+    // Create an object
+    var obj = { name: "Tony", age: "30" };
+
+   // ...
+   personSchema.cleanup( obj, 'doNotSave' );
+
+This is handy when a web form submits extra data that is not for the database, and you want to clean the object up before writing the information to the database.
+
+
 ## Async validator functions
 
 You might want to do some async validation. The in-field validation function is clearly syncronous, as it's meant to be used just for simple validation. However, you can also do more advanced async validation:
@@ -211,18 +233,28 @@ This module works well when casting and checking data coming from a web form. Th
       personSchema = new Schema( {
         name: { type: 'string', trim: 20, required: true },
         age: { type: 'number', default: 30, max: 140 },
-        rank: { type: 'number', default: 99, max: 99 },
+        rank: { type: 'number', default: 99, max: 99, doNotSave: true },
       });
 
       var body = Schema.clone( body );
 
       // Do schema and callback functon checks. They will both add to `errors`
-      self.schema.cast(  body );
-      self.schema.check( body, req.body, errors );
+      personSchema.cast(  body );
+      personSchema.check( body, req.body, errors );
 
       if( errors.length) {
          // Do what you normally do when there is an error,
          // ...
+      } else {
+        // ...
+
+        // use the body.rank attribute...
+
+        // Get the object ready to be written on the database. The field
+        // `rank` is not to be part of the DB
+        personSchema.cleanup( body, 'doNotSave' );
+
+        // Write `body` to the database
       }
 
 This ensures that all values are cast appropriately (everything in `req.body` is a string). It's easy to change requirements, and (more importantly) make sure that only the right parameters were passed.

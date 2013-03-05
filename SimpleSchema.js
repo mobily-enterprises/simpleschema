@@ -3,12 +3,6 @@ var
 , declare = require('simpledeclare')
 ;
 
-/*
-  TODO:
-  Using `declare()` here means that you can _very_ easily define your schema for your own applications,
-  and that each Store engine can define the appropriate Schema (for example to check IDs, cast them, etc.)
-*/
-
 var SimpleSchema = declare( null, {
 
   constructor: function( structure, options){
