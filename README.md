@@ -61,7 +61,16 @@ The `cast()` function takes an object and casts its values to the right type for
 
 The `check()` function takes as parameters an object, the object _before_ casting, an array variable, and an options object. `check()` will also manipulate the object as needed (assignin defaults, etc.).
 
-The `errors` array variable will be populated by the `check()` function in case of problems. So, your code should check if the passed variable has grown after the `check()`.
+The `errors` array variable will be populated by the `check()` function in case of problems. So, your code should check if the passed variable has grown after the `check()`. The `errors` varialbe will be ab array of objects, in the format:
+
+    [
+      { field: 'nameOfFieldsWithProblems', message: 'Message to the user for this field', mustChange: true },
+      { field: 'nameOfAnotherField', message: 'Message to the user for this other field', mustChange: alse },
+    ]
+
+As a result, when there is an error the module will simply `push()` to `errors`:
+
+    if( typeof( r ) === 'string' ) p.errors.push( { field: p.fieldName, message: r, mustChange: true } );
 
 
 ## Behind the scenes
