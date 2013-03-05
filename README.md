@@ -51,7 +51,7 @@ Note:
  * `min`, `max` only apply to `number`s
  * `uppercase`, `lowercase`, `trim` only apply to `string`s
  * `required` will fail if the _original_ object's corresponding attribute was `undefined` and will never fail for arrays
- * `notEmpty` will fail if the _original_ object's corresponding attribute was == '' and will never fail for arrays
+ * `notEmpty` will fail if the _original_ object's corresponding attribute was `v == ''` and will never fail for arrays
 
 
 ## Casting
