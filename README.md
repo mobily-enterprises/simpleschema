@@ -79,6 +79,7 @@ As a result, when there is an error the module will simply `push()` to `errors`:
 
     if( typeof( r ) === 'string' ) p.errors.push( { field: p.fieldName, message: r, mustChange: true } );
 
+If the object has a field that is not in the schema, it will add an error for that field in `errors`.
 
 ## Async validator functions
 
@@ -195,6 +196,36 @@ The `TypeParam` function has a parameter, `p`, which has anything you might poss
  *  `schema`: The full schema,
  *  `errors`: The array that will be "augmented" with errors
  *  `options`: Options passed to the `check()` function
+
+# Use
+
+This module works well when casting and checking data coming from a web form. This is a typical use:
+
+
+    var Schema = require( 'simpleschema' );
+
+    formSubmit( req, res, next ){
+
+      var errors = [];
+
+      personSchema = new Schema( {
+        name: { type: 'string', trim: 20, required: true },
+        age: { type: 'number', default: 30, max: 140 },
+        rank: { type: 'number', default: 99, max: 99 },
+      });
+
+      var body = Schema.clone( body );
+
+      // Do schema and callback functon checks. They will both add to `errors`
+      self.schema.cast(  body );
+      self.schema.check( body, req.body, errors );
+
+      if( errors.length) {
+         // Do what you normally do when there is an error,
+         // ...
+      }
+
+This ensures that all values are cast appropriately (everything in `req.body` is a string). It's easy to change requirements, and (more importantly) make sure that only the right parameters were passed.
 
 
 
