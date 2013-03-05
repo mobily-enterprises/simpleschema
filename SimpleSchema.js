@@ -187,10 +187,10 @@ var SimpleSchema = declare( null, {
   },
 
 
-  validate: function( object, error, cb ){
+  validate: function( object, errors, cb ){
 
     if( typeof( this.options ) === 'object'  && typeof( this.options.validate) === 'function' ){
-      this.options.validate.call( object, this, error, cb );
+      this.options.validate.call( object, this, errors, cb );
     } else {
       cb( null, true );
     }

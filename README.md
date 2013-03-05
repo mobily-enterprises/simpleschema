@@ -35,11 +35,17 @@ Here is how to use it:
 
 Here is a schema which covers _every_ single possibility in terms of types and parameters (parameters will not be repeated):
 
+    // If it returns a string, then there was an error
+    validatorFunc =  function( obj, value, fieldName, schema ){
+      if( value == 'bad' ) return 'error';
+      return;
+    };
+
     schema = new Schema( {
       name:    { type: 'string', default: 'something', uppercase: true, trim: 30, required: true, notEmpty: true },
       surname: { type: 'string', lowercase: true },
       data:    { type: 'string', serialize: true },
-      age:     { type: 'number', default: min: 10, max: 20 },
+      age:     { type: 'number', default: min: 10, max: 20, validator: validatorFunc },
       id:      { type: 'id' },
       date:    { type: 'date' },
       list:    { type: array },
@@ -52,6 +58,7 @@ Note:
  * `uppercase`, `lowercase`, `trim` only apply to `string`s
  * `required` will fail if the _original_ object's corresponding attribute was `undefined` and will never fail for arrays
  * `notEmpty` will fail if the _original_ object's corresponding attribute was `v == ''` and will never fail for arrays
+ * If `validatorFunc` returns a string, then an error will be added for that field
 
 ## Casting
     
@@ -65,12 +72,69 @@ The `errors` array variable will be populated by the `check()` function in case 
 
     [
       { field: 'nameOfFieldsWithProblems', message: 'Message to the user for this field', mustChange: true },
-      { field: 'nameOfAnotherField', message: 'Message to the user for this other field', mustChange: alse },
+      { field: 'nameOfAnotherField', message: 'Message to the user for this other field', mustChange: false },
     ]
 
 As a result, when there is an error the module will simply `push()` to `errors`:
 
     if( typeof( r ) === 'string' ) p.errors.push( { field: p.fieldName, message: r, mustChange: true } );
+
+
+## Async validator functions
+
+You might want to do some async validation. The in-field validation function is clearly syncronous, as it's meant to be used just for simple validation. However, you can also do more advanced async validation:
+
+    var Schema = require( 'simpleschema' );
+    var errors = [];
+
+    personSchema = new Schema(
+      {
+        name: { type: 'string', trim: 20 },
+        rank: { type: 'number', default: 99, max: 99 },
+      },
+      {
+        // Function to validate a whole object asyncronously
+        // passed as an option to the schema
+
+        validate: function( object, schema, errors, cb ){
+           db.find({ name: object.name } , function( err, doc ){
+             if( err ){
+               cb( err );
+             } else {
+               if( doc.name != object.name ){
+                  errors.push( { field: 'name', message: 'Name mismatch!' } );
+               }
+               cb( null );
+             }
+           }
+        },
+
+
+      }
+    );
+
+    // Create an object
+    var obj = { name: "Tony", age: "30" };
+
+    // Make a copy before casting
+    newObj = Schema.clone( obj );
+    
+    // Cast the object, assigning defaults etc.
+    personSchema.cast( newObj ); // { name: "Tony", age: 30 } 
+    personSchema.check( newObj, obj, errors, { myOption: 1 } ); //  { name: "Tony", age: 30, rank: 99 }
+    personSchema.validate( obj,  errors, function( err ){
+      if( err ){
+         next( err );
+      } else {
+
+        if( errors.length ){
+        // ...
+        }
+
+      }
+    });
+ 
+Asyncronous validation is much more complex, and it always happens at db-level. It's not possible to implement an async function that performs per-field validation, because `check()` itself is syncronous. While it _is_ possible to turn `check()` into an asyncronous function, this change will also imply a change in the mame of the module, from `simpleschema` to `complexschema`.
 
 
 ## Behind the scenes
