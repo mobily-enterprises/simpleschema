@@ -72,13 +72,13 @@ For casting, for example, when `cast()` encounters:
 
     surname: { type: 'string', lowercase: true },
 
-It looks into `this` for a function called `stringTypeCast`. It finds it: so it runs:
+It looks into `this` for a function called `stringTypeCast`. It finds it, so it runs:
 
     stringTypeCast: function( definition, value){ return value.toString(); },
 
 This applies to all of the casting functions.
 
-Parameters are based on the same principle. So, when check() encounters:
+Parameters are based on the same principle. So, when `check()` encounters:
  
     surname: { type: 'string', lowercase: true },
 
@@ -104,7 +104,7 @@ The basic schema is there to be extended. It's very easy to define new types and
       }, 
     });
 
-(_NOTE_: if the function returns anything but `undefined`, the object's field is assigned to what is returned. So, if you don't want to change the object's value, just `return`.)
+( _NOTE_ : if the function returns anything but `undefined`, the object's field is assigned to what is returned. So, if you don't want to change the object's value, just `return`.)
 
 Now in your schema you can have entries like:
 
