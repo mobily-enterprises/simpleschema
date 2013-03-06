@@ -23,7 +23,7 @@ var SimpleSchema = declare( null, {
 
   arrayTypeCast: function( definition, value){ return Array.isArray( value ) ? value : [ value ] },
 
-  // Basic attributes
+  // Basic parameters
  
   minTypeParam: function( p ){
     if( p.definition.type === 'number' && p.value < definitionValue ){
@@ -92,7 +92,8 @@ var SimpleSchema = declare( null, {
     }
   },
 
-  cast: function( object ){
+
+  _cast: function( object ){
   
   /*
       schema: {
@@ -103,7 +104,7 @@ var SimpleSchema = declare( null, {
       }
     */
   
-    var type;
+    var type, failedCasts = {};
   
     // Scan passed object
     for( var fieldName in object ){
@@ -114,17 +115,19 @@ var SimpleSchema = declare( null, {
   
       // Run the xxxTypeCast function for a specific type
       if( typeof( this[ definition.type + 'TypeCast' ]) === 'function' ){
-        object[ fieldName ] = this[ definition.type + 'TypeCast' ](definition, object[ fieldName ]);
+        var result = this[ definition.type + 'TypeCast' ](definition, object[ fieldName ], failedCasts );
+        if( typeof( result ) !== 'undefined' ) object[ fieldName ] = result;
+
       } else {
         throw( new Error("No casting function found, type probably wrong: " + definition.type ) );
       }
 
     }
-   
+    return failedCasts; 
   },
 
  
-  check: function( object, objectBeforeCast, errors, options ){
+  _check: function( object, objectBeforeCast, errors, options, failedCasts ){
   
     var type;
     var options = typeof(options) === 'undefined' ? {} : options;
@@ -143,36 +146,51 @@ var SimpleSchema = declare( null, {
 
     // Scan schema
     for( var fieldName in this.structure ){
-      definition = this.structure[ fieldName ];
+      if( ! failedCasts[ fieldName ] ) {
+        definition = this.structure[ fieldName ];
 
-       // Run specific functions based on the passed options
-      for( var attribute in definition ){
-        if( attribute != 'type' ){
-          if( typeof( this[ attribute + 'TypeParam' ]) === 'function' ){
-            var result = this[ attribute + 'TypeParam' ]({
-              value: object[ fieldName ],
-              object: object,
-              objectBeforeCast: objectBeforeCast,
-              fieldName: fieldName,
-              definition: definition,
-              definitionValue: definition[ attribute ],
-              schema: this,
-              errors: errors,
-              options: options
-            } );
-            if( typeof( result ) !== 'undefined' ) object[ fieldName ] = result;
-
-          }
-             
+         // Run specific functions based on the passed options
+        for( var parameter in definition ){
+          if( parameter != 'type' ){
+            if( typeof( this[ parameter + 'TypeParam' ]) === 'function' ){
+              var result = this[ parameter + 'TypeParam' ]({
+                value: object[ fieldName ],
+                object: object,
+                objectBeforeCast: objectBeforeCast,
+                fieldName: fieldName,
+                definition: definition,
+                definitionValue: definition[ parameter ],
+                schema: this,
+                errors: errors,
+                options: options,
+              } );
+              if( typeof( result ) !== 'undefined' ) object[ fieldName ] = result;
+            }
+          }   
         }
       }   
     }
   },
 
-  cleanup: function( object, attributeName ){
+
+  apply: function( object, errors, options ){
+   
+    var originalObject = this.clone( object );
+
+    failedCasts = this._cast( object );
+    Object.keys( failedCasts ).forEach( function( fieldName ){
+      errors.push( { field: fieldName, error: "Error during casting" } );
+    });
+   
+    this._check( object, originalObject, errors, options, failedCasts ); 
+  },
+
+
+
+  cleanup: function( object, parameterName ){
     newObject = {};
     for( var k in object ){
-       if( this.structure[ k ][attributeName] ) {
+       if( this.structure[ k ][parameterName] ) {
          delete object [ k ]; 
          newObject[ k ] = object[ k ];
        }
@@ -192,7 +210,7 @@ var SimpleSchema = declare( null, {
 
 
   clone: function( obj ){
-    return  JSON.parse( JSON.stringify( obj ) );
+    SimpleSchema.clone( obj );
   }
 
 });

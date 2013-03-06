@@ -16,20 +16,18 @@ Here is how to use it:
       rank: { type: 'number', default: 99, max: 99 },
     });
 
+    // Store the old version of the object just in case
+    var oldObj = Schema.clone( obj );
+
     // Create an object
     var obj = { name: "Tony", age: "30" };
 
-    // Make a copy before casting
-    newObj = Schema.clone( obj );
-    
     // Cast the object, assigning defaults etc.
-    personSchema.cast( newObj ); // { name: "Tony", age: 30 } 
-    personSchema.check( newObj, obj, errors, { myOption: 1 } ); //  { name: "Tony", age: 30, rank: 99 }
+    personSchema.apply( obj, errors, { myOption: 1 } ); //  { name: "Tony", age: 30, rank: 99 }
     
     if( errors.length ){
       // ...
     }
-
 
 ## The schema description
 
@@ -45,7 +43,7 @@ Here is a schema which covers _every_ single possibility in terms of types and p
       name:    { type: 'string', default: 'something', uppercase: true, trim: 30, required: true, notEmpty: true },
       surname: { type: 'string', lowercase: true },
       data:    { type: 'string', serialize: true },
-      age:     { type: 'number', default: min: 10, max: 20, validator: validatorFunc },
+      age:     { type: 'number', default: 15, min: 10, max: 20, validator: validatorFunc },
       id:      { type: 'id' },
       date:    { type: 'date' },
       list:    { type: array },
@@ -53,22 +51,24 @@ Here is a schema which covers _every_ single possibility in terms of types and p
 
 Note:
 
+ * Casting always happens first
+ * If casting fails, the parameters for that field will not be applied (and `errors` will have the casting error)
  * The order matters. Parameters are processed in the order they are encountered. If you have `{ default: 'something', uppercase: true }`, the result will be `Something`.
  * `min`, `max` only apply to `number`s
  * `uppercase`, `lowercase`, `trim` only apply to `string`s
- * `required` will fail if the _original_ object's corresponding attribute was `undefined` and will never fail for arrays
- * `notEmpty` will fail if the _original_ object's corresponding attribute was `v == ''` and will never fail for arrays
+ * `required` will fail if the  object's corresponding attribute (before casting) was `undefined` and will never fail for arrays
+ * `notEmpty` will fail if the  object's corresponding attribute was `v == ''` and will never fail for arrays
  * If `validatorFunc` returns a string, then an error will be added for that field
 
-## Casting
+## What apply() does
+
+The `apply()` function takes as parameters 1) The object to manipulate 2) An array which will be populated with errors 3) An options object that will be passed to the functions.
     
-The `cast()` function takes an object and casts its values to the right type for the schema. This means that `"10"` (the string) will become `10` (the number) if the type is "number". Since `cast()` changes the actual object, it's best to make a copy. You should do so using `Schema.clone()`.
+The function first of all takes the passed object and casts its values to the right type for the schema. This means that `"10"` (the string) will become `10` (the number) if the type is "number".
 
-## Checking
+It then applies all parameters passed in order.
 
-The `check()` function takes as parameters an object, the object _before_ casting, an array variable, and an options object. `check()` will also manipulate the object as needed (assignin defaults, etc.).
-
-The `errors` array variable will be populated by the `check()` function in case of problems. So, your code should check if the passed variable has grown after the `check()`. The `errors` varialbe will be ab array of objects, in the format:
+The `errors` array variable will be populated in case of problems. So, your code should check if the passed variable has grown after the `apply()`. The `errors` varialbe will be ab array of objects, in the format:
 
     [
       { field: 'nameOfFieldsWithProblems', message: 'Message to the user for this field', mustChange: true },
@@ -97,8 +97,8 @@ The module allows you to clean up all fields with a specific attribute set as a 
     // Create an object
     var obj = { name: "Tony", age: "30" };
 
-   // ...
-   personSchema.cleanup( obj, 'doNotSave' );
+    // ...
+    personSchema.cleanup( obj, 'doNotSave' );
 
 This is handy when a web form submits extra data that is not for the database, and you want to clean the object up before writing the information to the database.
 
@@ -139,12 +139,8 @@ You might want to do some async validation. The in-field validation function is 
     // Create an object
     var obj = { name: "Tony", age: "30" };
 
-    // Make a copy before casting
-    newObj = Schema.clone( obj );
-    
     // Cast the object, assigning defaults etc.
-    personSchema.cast( newObj ); // { name: "Tony", age: 30 } 
-    personSchema.check( newObj, obj, errors, { myOption: 1 } ); //  { name: "Tony", age: 30, rank: 99 }
+    personSchema.apply( obj, errors, { myOption: 1 } ); //  { name: "Tony", age: 30, rank: 99 }
     personSchema.validate( obj,  errors, function( err ){
       if( err ){
          next( err );
@@ -157,24 +153,30 @@ You might want to do some async validation. The in-field validation function is 
       }
     });
  
-Asyncronous validation is much more complex, and it always happens at db-level. It's not possible to implement an async function that performs per-field validation, because `check()` itself is syncronous. While it _is_ possible to turn `check()` into an asyncronous function, this change will also imply a change in the mame of the module, from `simpleschema` to `complexschema`.
+Asyncronous validation is much more complex, and it always happens at db-level. It's not possible to implement an async function that performs per-field validation, because `apply()` itself is syncronous. While it _is_ possible to turn `apply()` into an asyncronous function, this change will also imply a change in the mame of the module, from `simpleschema` to `complexschema`.
 
 
 ## Behind the scenes
 
 The Schema class is based on named helper functions.
 
-For casting, for example, when `cast()` encounters:
+Everything happens in two phases: casting (using the internal function `_cast()`) and manipulation (using `_check()`).
+
+### Casting
+
+For casting, for example, when `apply()` encounters:
 
     surname: { type: 'string', lowercase: true },
 
-It looks into `this` for a function called `stringTypeCast`. It finds it, so it runs:
+It looks into the schema for a function called `stringTypeCast`. It finds it, so it runs:
 
     stringTypeCast: function( definition, value){ return value.toString(); },
 
 This applies to all of the casting functions.
 
-Parameters are based on the same principle. So, when `check()` encounters:
+### Checking
+
+Parameters are based on the same principle. So, when `apply()` encounters:
  
     surname: { type: 'string', lowercase: true },
 
@@ -217,7 +219,7 @@ The `TypeParam` function has a parameter, `p`, which has anything you might poss
  *  `definitionValue`: The value for this particular parameter in the definition
  *  `schema`: The full schema,
  *  `errors`: The array that will be "augmented" with errors
- *  `options`: Options passed to the `check()` function
+ *  `options`: Options passed to the `apply()` function
 
 # Use
 
@@ -236,11 +238,11 @@ This module works well when casting and checking data coming from a web form. Th
         rank: { type: 'number', default: 99, max: 99, doNotSave: true },
       });
 
-      var body = Schema.clone( body );
+      // Make a copy of req.body
+      var body = Schema.clone( req.body );
 
       // Do schema and callback functon checks. They will both add to `errors`
-      personSchema.cast(  body );
-      personSchema.check( body, req.body, errors );
+      personSchema.apply( body, errors );
 
       if( errors.length) {
          // Do what you normally do when there is an error,
