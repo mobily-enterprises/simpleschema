@@ -54,7 +54,7 @@ Note:
  * Casting always happens first
  * If casting fails, the parameters for that field will not be applied (and `errors` will have the casting error)
  * The order matters. Parameters are processed in the order they are encountered. If you have `{ default: 'something', uppercase: true }`, the result will be `Something`.
- * `min`, `max` only apply to `number`s
+ * `min`, `max` on `string`s will check the string length; on `number`s will check number value
  * `uppercase`, `lowercase`, `trim` only apply to `string`s
  * `required` will fail if the  object's corresponding attribute (before casting) was `undefined` and will never fail for arrays
  * `notEmpty` will fail if the  object's corresponding attribute was `v == ''` and will never fail for arrays

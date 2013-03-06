@@ -26,8 +26,11 @@ var SimpleSchema = declare( null, {
   // Basic parameters
  
   minTypeParam: function( p ){
-    if( p.definition.type === 'number' && p.value < definitionValue ){
+    if( p.definition.type === 'number' && p.value < p.definitionValue ){
       p.errors.push( { field: p.fieldName, message: 'Field is too low: ' + p.fieldName } );
+    }
+    if( p.definition.type === 'string' && p.value.length < p.definitionValue ){
+      p.errors.push( { field: p.fieldName, message: 'Field is too short: ' + p.fieldName } );
     }
   },
 
@@ -35,6 +38,12 @@ var SimpleSchema = declare( null, {
     if( p.definition.type === 'number' && p.value > p.definitionValue ){
       p.errors.push( { field: p.fieldName, message: 'Field is too high: ' + p.fieldName } );
     }
+
+    if( p.definition.type === 'string' && p.value.length > p.definitionValue ){
+      p.errors.push( { field: p.fieldName, message: 'Field is too long: ' + p.fieldName } );
+    }
+
+
   },
 
   validateTypeParam: function( p ){
@@ -210,7 +219,7 @@ var SimpleSchema = declare( null, {
 
 
   clone: function( obj ){
-    SimpleSchema.clone( obj );
+    return SimpleSchema.clone( obj );
   }
 
 });
