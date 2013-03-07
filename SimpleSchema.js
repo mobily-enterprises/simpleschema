@@ -26,20 +26,20 @@ var SimpleSchema = declare( null, {
   // Basic parameters
  
   minTypeParam: function( p ){
-    if( p.definition.type === 'number' && p.value < p.definitionValue ){
+    if( p.definition.type === 'number' && p.value < p.parameterValue ){
       p.errors.push( { field: p.fieldName, message: 'Field is too low: ' + p.fieldName } );
     }
-    if( p.definition.type === 'string' && p.value.length < p.definitionValue ){
+    if( p.definition.type === 'string' && p.value.length < p.parameterValue ){
       p.errors.push( { field: p.fieldName, message: 'Field is too short: ' + p.fieldName } );
     }
   },
 
   maxTypeParam: function( p ){
-    if( p.definition.type === 'number' && p.value > p.definitionValue ){
+    if( p.definition.type === 'number' && p.value > p.parameterValue ){
       p.errors.push( { field: p.fieldName, message: 'Field is too high: ' + p.fieldName } );
     }
 
-    if( p.definition.type === 'string' && p.value.length > p.definitionValue ){
+    if( p.definition.type === 'string' && p.value.length > p.parameterValue ){
       p.errors.push( { field: p.fieldName, message: 'Field is too long: ' + p.fieldName } );
     }
 
@@ -47,10 +47,10 @@ var SimpleSchema = declare( null, {
   },
 
   validateTypeParam: function( p ){
-    if( typeof( p.definitionValue ) !== 'function' )
-      throw( new Error("Validator function needs to be a function, found: " + typeof( p.definitionValue ) ) );
+    if( typeof( p.parameterValue ) !== 'function' )
+      throw( new Error("Validator function needs to be a function, found: " + typeof( p.parameterValue ) ) );
 
-    var r = p.definitionValue.call( p.object, p.object[ p.fieldName ], p.fieldName, p.schema );
+    var r = p.parameterValue.call( p.object, p.object[ p.fieldName ], p.fieldName, p.schema );
     if( typeof( r ) === 'string' ) p.errors.push( { field: p.fieldName, message: r, mustChange: true } );
   },
 
@@ -65,12 +65,12 @@ var SimpleSchema = declare( null, {
 
   trimTypeParam: function( p ){
     if( typeof( p.value ) !== 'string' ) return;
-    return  p.value.substr( 0, p.definitionValue );
+    return  p.value.substr( 0, p.parameterValue );
   },
 
   defaultTypeParam: function( p ){
     if( typeof( p.value ) === 'undefined' ){
-      p.object[ p.fieldName ] = p.definitionValue;
+      p.object[ p.fieldName ] = p.parameterValue;
     }
   },
 
@@ -82,7 +82,7 @@ var SimpleSchema = declare( null, {
 
   requiredTypeParam: function( p ){
 
-    if( typeof( p.object[ p.fieldName ]) === 'undefined'){
+    if( typeof( p.object[ p.fieldName ]) === 'undefined'  && p.parameterValue ){
 
       // Callers can set exceptions to the rule through `option`. This is crucial
       // to exclude some IDs (for example, POST doesn't have an recordId even though
@@ -168,7 +168,7 @@ var SimpleSchema = declare( null, {
                 objectBeforeCast: objectBeforeCast,
                 fieldName: fieldName,
                 definition: definition,
-                definitionValue: definition[ parameter ],
+                parameterValue: definition[ parameter ],
                 schema: this,
                 errors: errors,
                 options: options,
