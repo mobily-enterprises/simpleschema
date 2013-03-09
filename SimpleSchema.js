@@ -120,7 +120,7 @@ var SimpleSchema = declare( null, {
   
       definition = this.structure[ fieldName ];
   
-      if( typeof(definition) === 'undefined' ) return;
+      if( typeof(definition) === 'undefined' ) return {};
   
       // Run the xxxTypeCast function for a specific type
       if( typeof( this[ definition.type + 'TypeCast' ]) === 'function' ){
