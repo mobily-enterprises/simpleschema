@@ -13,15 +13,62 @@ var SimpleSchema = declare( null, {
 
   // Basic types
 
-  idTypeCast: function( definition, value ){ return value; },
+  idTypeCast: function( definition, value, fieldName, failedCasts ){
+    return value;
+  },
 
-  stringTypeCast: function( definition, value){ return value.toString(); },
+  stringTypeCast: function( definition, value, fieldName, failedCasts ){
 
-  numberTypeCast: function( definition, value){ return Number( value ); },
+    // Undefined: return '';
+    if( typeof( value ) === 'undefined' ) return '';
+
+    // No toString() available: failing to cast
+    if( typeof( value.toString ) === 'undefined' ){
+      failedCasts[ fieldName ] = true;
+      return;
+    }
+
+    // Return cast value
+    return value.toString();
+  },
+
+  numberTypeCast: function( definition, value,  fieldName, failedCasts ){
+
+    // Undefined: return 0;
+    if( typeof( value ) === 'undefined' ) return 0;
+
+    // If Number() returns NaN, fail
+    var r = Number( value );
+    if( isNaN( r ) ){
+      failedCasts[ fieldName ] = true;
+    }
+
+    // Return cast value
+    return r;
+
+  },
  
-  dateTypeCast: function( definition, value){ return new Date( value ); },
+  dateTypeCast:function( definition, value, fieldName, failedCasts ){
 
-  arrayTypeCast: function( definition, value){ return Array.isArray( value ) ? value : [ value ] },
+    // Undefined: return empty date
+    if( typeof( value ) === 'undefined' ){
+      return new Date();
+    }
+
+    // If new Date() returns NaN, date was not corect, fail
+    var r = new Date( value );
+    if( isNaN( r ) ){
+      failedCasts[ fieldName ] = true;
+    }
+  
+    // return cast value
+    return r;
+    
+  },
+
+  arrayTypeCast: function( definition, value, fieldName, failedCasts){
+    return Array.isArray( value ) ? value : [ value ]
+  },
 
   // Basic parameters
  
@@ -69,7 +116,7 @@ var SimpleSchema = declare( null, {
   },
 
   defaultTypeParam: function( p ){
-    if( typeof( p.value ) === 'undefined' ){
+    if( typeof( p.objectBeforeCast[ p.fieldName ] ) === 'undefined' ){
       p.object[ p.fieldName ] = p.parameterValue;
     }
   },
@@ -114,7 +161,26 @@ var SimpleSchema = declare( null, {
     */
   
     var type, failedCasts = {};
+
+    // Scan structure object
+    for( var fieldName in this.structure ){
   
+      definition = this.structure[ fieldName ];
+  
+      // Run the xxxTypeCast function for a specific type
+      if( typeof( this[ definition.type + 'TypeCast' ]) === 'function' ){
+        var result = this[ definition.type + 'TypeCast' ](definition, object[ fieldName ], fieldName, failedCasts );
+        if( typeof( result ) !== 'undefined' ) object[ fieldName ] = result;
+
+      } else {
+        throw( new Error("No casting function found, type probably wrong: " + definition.type ) );
+      }
+
+    }
+    return failedCasts; 
+
+
+/*  
     // Scan passed object
     for( var fieldName in object ){
   
@@ -133,6 +199,11 @@ var SimpleSchema = declare( null, {
 
     }
     return failedCasts; 
+*/
+
+  
+
+
   },
 
  
@@ -146,7 +217,7 @@ var SimpleSchema = declare( null, {
     // Scan passed object, check if there are extra fields that shouldn't
     // be there
     for( var k in object ){
-  
+ 
       // First of all, if it's not in the schema, it's not allowed
       if( typeof( this.structure[ k ] ) === 'undefined' ){
         errors.push( { field: k, message: 'Field not allowed: ' + k, mustChange: false } );
