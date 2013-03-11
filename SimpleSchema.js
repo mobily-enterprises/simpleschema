@@ -41,6 +41,7 @@ var SimpleSchema = declare( null, {
     var r = Number( value );
     if( isNaN( r ) ){
       failedCasts[ fieldName ] = true;
+      return;
     }
 
     // Return cast value
@@ -59,6 +60,7 @@ var SimpleSchema = declare( null, {
     var r = new Date( value );
     if( isNaN( r ) ){
       failedCasts[ fieldName ] = true;
+      return;
     }
   
     // return cast value
