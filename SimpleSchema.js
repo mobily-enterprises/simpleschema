@@ -178,32 +178,27 @@ var SimpleSchema = declare( null, {
 
     }
     return failedCasts; 
+  },
 
+  _castObjectValues: function( object ){
 
-/*  
     // Scan passed object
     for( var fieldName in object ){
   
       definition = this.structure[ fieldName ];
   
-      if( typeof(definition) === 'undefined' ) return {};
+      if( typeof(definition) === 'undefined' ) continue;
   
       // Run the xxxTypeCast function for a specific type
       if( typeof( this[ definition.type + 'TypeCast' ]) === 'function' ){
-        var result = this[ definition.type + 'TypeCast' ](definition, object[ fieldName ], failedCasts );
+        var result = this[ definition.type + 'TypeCast' ](definition, object[ fieldName ], fieldName, failedCasts );
         if( typeof( result ) !== 'undefined' ) object[ fieldName ] = result;
-
       } else {
         throw( new Error("No casting function found, type probably wrong: " + definition.type ) );
       }
 
     }
     return failedCasts; 
-*/
-
-  
-
-
   },
 
  
