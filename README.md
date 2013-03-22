@@ -51,14 +51,16 @@ Here is a schema which covers _every_ single possibility in terms of types and p
 
 Note:
 
- * Casting always happens first
+ * Casting always happens first; note: you can pass the option `skipCast: [ 'one', 'two' ]` if you want to skip casting for those fields
  * If casting fails, the parameters for that field will not be applied (and `errors` will have the casting error)
  * The order matters. Parameters are processed in the order they are encountered. If you have `{ default: 'something', uppercase: true }`, the result will be `Something`.
  * `min`, `max` on `string`s will check the string length; on `number`s will check number value
  * `uppercase`, `lowercase`, `trim` only apply to `string`s
- * `required` will fail if the  object's corresponding attribute (before casting) was `undefined` and will never fail for arrays
+ * `required` will fail if the  object's corresponding attribute (before casting) was `undefined` and will never fail for arrays; note: you can pass the option `notRequired: [ 'one', 'two' ]` to `apply()` if you want to override the field-level `required` option.
  * `notEmpty` will fail if the  object's corresponding attribute was `v == ''` and will never fail for arrays
  * If `validatorFunc` returns a string, then an error will be added for that field
+
+
 
 ## What apply() does
 
@@ -80,6 +82,11 @@ As a result, when there is an error the module will simply `push()` to `errors`:
     if( typeof( r ) === 'string' ) p.errors.push( { field: p.fieldName, message: r, mustChange: true } );
 
 If the object has a field that is not in the schema, it will add an error for that field in `errors`.
+
+Note: in some cases, you want to define a schema, and then want to `apply()` to it with some exceptions. For example, you might want to `apply()` to a new record, which doesn't yet have an ID. In this case you would:
+
+    // Do schema cast and check for a new record
+    self.schema.apply(  body, errors, { notRequired: [ '_id' ], skipCast: [ '_id' ]  } );
 
 ## Cleaning up
 
