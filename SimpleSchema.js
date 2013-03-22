@@ -151,7 +151,7 @@ var SimpleSchema = declare( null, {
   },
 
 
-  _cast: function( object ){
+  _cast: function( object, options ){
   
   /*
       schema: {
@@ -163,12 +163,18 @@ var SimpleSchema = declare( null, {
     */
   
     var type, failedCasts = {};
+    var options = typeof(options) === 'undefined' ? {} : options;
 
     // Scan structure object
     for( var fieldName in this.structure ){
   
       definition = this.structure[ fieldName ];
-  
+ 
+      // Skip casting if so required
+      if( Array.isArray( options.skipCast )  && options.skipCast.indexOf( fieldName ) != -1  ){
+        continue;
+      }
+ 
       // Run the xxxTypeCast function for a specific type
       if( typeof( this[ definition.type + 'TypeCast' ]) === 'function' ){
         var result = this[ definition.type + 'TypeCast' ](definition, object[ fieldName ], fieldName, failedCasts );
@@ -182,10 +188,18 @@ var SimpleSchema = declare( null, {
     return failedCasts; 
   },
 
-  _castObjectValues: function( object ){
+  _castObjectValues: function( object, options ){
+
+    var type, failedCasts = {};
+    var options = typeof(options) === 'undefined' ? {} : options;
 
     // Scan passed object
     for( var fieldName in object ){
+
+      // Skip casting if so required
+      if( Array.isArray( options.skipCast )  && options.skipCast.indexOf( fieldName ) != -1  ){
+        continue;
+      }
   
       definition = this.structure[ fieldName ];
   
@@ -254,7 +268,7 @@ var SimpleSchema = declare( null, {
    
     var originalObject = this.clone( object );
 
-    failedCasts = this._cast( object );
+    failedCasts = this._cast( object, options );
     Object.keys( failedCasts ).forEach( function( fieldName ){
       errors.push( { field: fieldName, error: "Error during casting" } );
     });
