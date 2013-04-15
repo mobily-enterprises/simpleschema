@@ -8,14 +8,18 @@ var SimpleSchema = declare( null, {
   constructor: function( structure, options){
     this.structure = structure;
     this.options = typeof( options ) !== 'undefined' ? options : {};
+
+    this.fieldsHash = {}
+    for( var k in this.structure ){
+      this.fieldsHash[ k ] = true;
+    }
+
+
   },
 
+  
 
   // Basic types
-
-  idTypeCast: function( definition, value, fieldName, failedCasts ){
-    return value;
-  },
 
   stringTypeCast: function( definition, value, fieldName, failedCasts ){
 
@@ -92,7 +96,6 @@ var SimpleSchema = declare( null, {
       p.errors.push( { field: p.fieldName, message: 'Field is too long: ' + p.fieldName } );
     }
 
-
   },
 
   validateTypeParam: function( p ){
@@ -118,8 +121,14 @@ var SimpleSchema = declare( null, {
   },
 
   defaultTypeParam: function( p ){
+    var v;
     if( typeof( p.objectBeforeCast[ p.fieldName ] ) === 'undefined' ){
-      p.object[ p.fieldName ] = p.parameterValue;
+      if( typeof(  p.parameterValue ) === 'function' ){
+        v = p.parameterValue.call();
+      } else {
+        v = p.parameterValue;
+      }
+      p.object[ p.fieldName ] = v;
     }
   },
 
@@ -152,7 +161,7 @@ var SimpleSchema = declare( null, {
 
 
   _cast: function( object, options ){
-  
+ 
   /*
       schema: {
         longName: { type: 'string', required: true, notEmpty: true, trim: 35 },
@@ -167,6 +176,7 @@ var SimpleSchema = declare( null, {
 
     // Scan structure object
     for( var fieldName in this.structure ){
+
   
       definition = this.structure[ fieldName ];
  
@@ -268,6 +278,7 @@ var SimpleSchema = declare( null, {
    
     var originalObject = this.clone( object );
 
+
     failedCasts = this._cast( object, options );
     Object.keys( failedCasts ).forEach( function( fieldName ){
       errors.push( { field: fieldName, error: "Error during casting" } );
@@ -304,6 +315,8 @@ var SimpleSchema = declare( null, {
     return SimpleSchema.clone( obj );
   }
 
+
+  
 });
 
 
