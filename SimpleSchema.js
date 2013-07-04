@@ -9,15 +9,13 @@ var SimpleSchema = declare( null, {
     this.structure = structure;
     this.options = typeof( options ) !== 'undefined' ? options : {};
 
+    // A list of fields in hash format
     this.fieldsHash = {}
     for( var k in this.structure ){
       this.fieldsHash[ k ] = true;
     }
-
-
   },
 
-  
 
   // Basic types
 
@@ -140,6 +138,9 @@ var SimpleSchema = declare( null, {
 
   requiredTypeParam: function( p ){
 
+    // If onlyObjectValues is on, then required mustn't be effective
+    if( p.options.onlyObjectValues ) return;
+
     if( typeof( p.object[ p.fieldName ]) === 'undefined'  && p.parameterValue ){
 
       // Callers can set exceptions to the rule through `option`. This is crucial
@@ -173,13 +174,22 @@ var SimpleSchema = declare( null, {
   
     var type, failedCasts = {};
     var options = typeof(options) === 'undefined' ? {} : options;
+    var targetObject;
 
-    // Scan structure object
-    for( var fieldName in this.structure ){
 
+    // Set the targetObject. If the target is the object itself,
+    // then missing fields won't be a problem
+    if( options.onlyObjectValues ) targetObject = object;
+    else targetObject = this.structure;
+
+    for( var fieldName in targetObject ){
   
       definition = this.structure[ fieldName ];
  
+      // If the definition is undefined, and it's an onject-oriented check,
+      // then the missing definition mustn't be a problem.
+      if( typeof(definition) === 'undefined' && options.onlyObjectValues ) continue;
+
       // Skip casting if so required
       if( Array.isArray( options.skipCast )  && options.skipCast.indexOf( fieldName ) != -1  ){
         continue;
@@ -198,6 +208,7 @@ var SimpleSchema = declare( null, {
     return failedCasts; 
   },
 
+/*
   _castObjectValues: function( object, options ){
 
     var type, failedCasts = {};
@@ -226,7 +237,7 @@ var SimpleSchema = declare( null, {
     }
     return failedCasts; 
   },
-
+*/
  
   _check: function( object, objectBeforeCast, errors, options, failedCasts ){
   
@@ -274,14 +285,13 @@ var SimpleSchema = declare( null, {
   },
 
 
-  apply: function( object, errors, options ){
+  castAndCheck: function( object, errors, options ){
    
     var originalObject = this.clone( object );
 
-
     failedCasts = this._cast( object, options );
     Object.keys( failedCasts ).forEach( function( fieldName ){
-      errors.push( { field: fieldName, error: "Error during casting" } );
+      errors.push( { field: fieldName, message: "Error during casting" } );
     });
    
     this._check( object, originalObject, errors, options, failedCasts ); 
@@ -311,18 +321,28 @@ var SimpleSchema = declare( null, {
   },
 
 
+  // Clone function available as an object method
   clone: function( obj ){
     return SimpleSchema.clone( obj );
-  }
+  },
 
+  // The default id maker (just return a random number )
+  // available as an object method
+  makeId: function( object, cb ){
+    SimpleSchema.makeId( object, cb );
+  },
 
-  
 });
 
 
 SimpleSchema.clone = function( obj ){
   return  JSON.parse( JSON.stringify( obj ) );
 }
+
+SimpleSchema.makeId = function( object, cb ){
+  cb( null, Math.floor(Math.random()*10000000) );
+},
+
 
 exports = module.exports = SimpleSchema;
 
