@@ -122,6 +122,7 @@ The `errors` array variable will be populated in case of problems. So, your code
 
 
 castAndParams accepts an `options` object where the following keys are considered:
+
   * `onlyObjectValues` The `required` parameter won't apply, and casting won't happen, for fields that are not defined in the object
   * `skipcast` A list of keys for which casting won't happen. Normally used with `notRequired`
   * `notRequired` A list of keys for which the `required` parameter won't apply. Normally used with `skipCast`
@@ -237,7 +238,8 @@ This is the full list of functions available with this module:
 
 Make up the schema object, assigning the `this.structure` field.
 
-Parameters:  
+Parameters:
+
   * `schemaObject` The schema structure
   * `options` An optional `options` object which can have:
     * `validator` -- The validator function
@@ -247,7 +249,8 @@ Parameters:
 
 Helper function that will define the type `xxx`. Used when you have, in your schema, something like `field1: { type: 'xxx' }` 
 
-Parameters:  
+Parameters:
+
   * `definition` The schema structure. IF `_cast()` was called with option `onlyObjectValues` the object itself
   * `value` The value of the object field
   * `fieldName` The field name
@@ -257,7 +260,8 @@ Parameters:
 
 The function actually responsible for casting, delegating it to the correct casting function. For example, if the schema has `field1: { type: 'xxx' }` and the object to be cast has `{ field1: 10 }`, `_cast()` will call `xxxTypeCast()` for that field.
 
-Parameters:  
+Parameters:
+
   * `object` The object to cast
   * `options` An optional options object.
     * `onlyObjectValues` -- If true, only values already defined in the object will be case. If false, every field defined in the schema structure will be cast even if not present in the object in the first place
@@ -272,7 +276,8 @@ NOTE: `options` is not passed to the xxxTypeCast function. Here, `options` solel
 
 Helper function to define possible parameters (other than "type"). Note that a parameter can apply to _any_ type -- it's up to the parameter helper function to decide what to do.
 
-Parameters:  
+Parameters:
+
   * `p` An associative array that will have the field described in the "parameters" paragraph above
 
 NOTE: `options` key is what was passed to `_params()` or `castAndParams()`.
@@ -281,7 +286,8 @@ NOTE: `options` key is what was passed to `_params()` or `castAndParams()`.
 
 The function that applies schema parameters to object fields, using the right param function. For example, if the schema has `field1: { type: 'number', xxx:10 }` and the object to be cast has `{ field1: 10 }`, `_param()` will call `xxxTypeParam()` for that field.
 
-Parameters:  
+Parameters:
+
   * `object` The object to check/apply parameters to
   * `objectBeforeCast` The object as it was _before_ casting. This is important as some checks will need to be performed to the object before casting actually happened
   * `errors` An array of error objects with fields  `field`, `message` and `mustChange`
@@ -295,7 +301,8 @@ NOTE: This function doesn't actively use `options` itself. Instead, it passed it
 
 Applies schema casting and parameters to the passed object. To do that, it will use `_cast()` and then `_params()`. `_cast()` returns a list of failed casts, which are then passed to `_params()`.
 
-Parameters:  
+Parameters:
+
   * `object` The object to cast and check
   * `errors` An array of error objects with fields  `field`, `message` and `mustChange`
   * `options` Options that will be passed to the `_params()` function, whic in turn will pass it to the `xxxTypeParam()` functions
@@ -304,7 +311,8 @@ Parameters:
 
 Clean up fields with a specific parameter defined.
 
-Parameters:  
+Parameters:
+
   * `object` The object to cleanup
   * `parameterName` The name of the parameter that will be hunted down. Any field that in the schema structure has thar parameter fill be deleted from `object`
  
@@ -313,7 +321,8 @@ Parameters:
 
 Calls the async `validator()` defined when constructing the schema object.
 
-Parameters:  
+Parameters:
+
   * `object` The object to async validate
   * `errors` An array of error objects with fields  `field`, `message` and `mustChange`
   * `cb` The callback, called once the schema's `validation()` function has been called
@@ -323,14 +332,16 @@ Parameters:
 
 Simple helper function to clone an object
 
-Parameters:  
+Parameters:
+
   * `object` The object to clone
 
 ## `makeId()`
 
 Function that returns a generated unique ID. It could be `ObjectId()` (mongoDB) or a new SEQUENCE number (MariaDB). Specific drivers will tend to rewrite this function.
 
-Parameters:  
+Parameters:
+
   * `object` The object for which the unique ID will be created
   * `cb` The callback to call once the ID is created
 
