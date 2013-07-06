@@ -207,7 +207,7 @@ var SimpleSchema = declare( null, {
     return failedCasts; 
   },
 
-  _check: function( object, objectBeforeCast, errors, options, failedCasts ){
+  _params: function( object, objectBeforeCast, errors, options, failedCasts ){
   
     var type;
     var options = typeof(options) === 'undefined' ? {} : options;
@@ -253,7 +253,7 @@ var SimpleSchema = declare( null, {
   },
 
 
-  castAndCheck: function( object, errors, options ){
+  castAndParams: function( object, errors, options ){
    
     var originalObject = this.clone( object );
 
@@ -262,7 +262,7 @@ var SimpleSchema = declare( null, {
       errors.push( { field: fieldName, message: "Error during casting" } );
     });
    
-    this._check( object, originalObject, errors, options, failedCasts ); 
+    this._params( object, originalObject, errors, options, failedCasts ); 
   },
 
 
