@@ -106,7 +106,7 @@ Note:
 ## What castAndCheck() does
 
 
-The `castAndCheck()` function takes as parameters 1) The object to manipulate 2) An array which will be populated with errors 3) An `options` object that will be passed to the functions.
+The `castAndCheck()` function takes as parameters 1) The object to manipulate 2) An array which will be populated with errors if necessary 3) An `options` object.
     
 The function first of all takes the passed object and casts its values to the right type for the schema. This means that `"10"` (the string) will become `10` (the number) if the type is "number".
 
@@ -263,7 +263,7 @@ Parameters:
   * `options` Options that will be passed to the `xxxTypeParam()` function
   * `failedCasts` Every key is the fieldName of a failed cast. It comes from the `_cast()` function
 
-NOTE: This function doesn't actively use `options` itself. Instead, it passed it to the `xxxTypeParam()` function. The values taken into account by the stock `xxxTypeParam()` functions are: `onlyObjectValues()` and `notRequired`, both in the `requiredTypeParam()` function. However, other non-core functions might use extra parameters.
+NOTE: This function doesn't actively use `options` itself. Instead, it passed it to the `xxxTypeParam()` function. The only stock function that uses `options` is `requiredTypeParam()` which looks for: `onlyObjectValues` and `notRequired`. However, other non-core functions might use these, or other, parameters.
 
 
 ## `_castAndCheck()`
