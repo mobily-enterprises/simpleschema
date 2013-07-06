@@ -4,30 +4,71 @@ SimpleSchema
 SimpleSchema is a _simple_ library to cast, and validate, objects.
 It uses [SimpleDeclare - Github](https://github.com/mercmobily/simpleDeclare) in order to define a class. I strongly recommend using SimpleDeclare to create derivative schemas (which are very easy to create).
 
+SimpleSchema is a required module when you try and use [JsonRestStores - Github](https://github.com/mercmobily/JsonRestStores). SimpleSchema was in fact part of JsonRestStores, and then "taken out" as it's useful in its own right.
+
 Here is how to use it:
 
-
     var Schema = require( 'simpleschema' );
-    var errors = [];
 
     personSchema = new Schema( {
       name: { type: 'string', trim: 20 },
-      age: { type: 'number', default: 30, max: 140 },
+      age:  { type: 'number', default: 30, max: 140 },
       rank: { type: 'number', default: 99, max: 99 },
+    },
+    {
+
+      // Validation function called by schema.validate() for async validation
+      validator: function( object, schema, errors, cb ){
+
+        if( doc.name == 'meh' ){
+           errors.push( { field: 'name', message: 'Name mismatch!' } );
+        }
+        cb( null);
     });
 
-    // Create an object
-    var obj = { name: "Tony", age: "30" };
 
-    // Store the old version of the object just in case
-    var oldObj = Schema.clone( obj );
+    // Definition of a standard callback
 
-    // Cast the object, assigning defaults etc.
-    personSchema.castAndCheck( obj, errors, { myOption: 1 } ); //  { name: "Tony", age: 30, rank: 99 }
-    
-    if( errors.length ){
-      // ...
-    }
+    formSubmit( req, res, next ){
+
+      var errors = [];
+
+      // Make a copy of req.body, as castAndCheck _will_ change body. If you are not
+      // bothered by changing `req.body`, you can just pass `req.body` to `castAndCheck()`
+      var body = Schema.clone( req.body );
+
+      // Do schema and callback functon checks. They will both add to `errors`
+      personSchema.castAndCheck( body, errors );
+
+      // Apply async, record-wise validation which will also enrich the `errors` variable
+      personSchema.validate( obj,  errors, function( err ){
+
+        if( err ){
+          next( err );
+        } else {
+
+          if( errors.length) {
+             // Do what you normally do when there is an error,
+             // ...
+          } else {
+            // ...
+
+            // use the body.rank attribute...
+
+            // Get the object ready to be written on the database. The field
+            // `rank` is not to be part of the DB
+            // Cleanup will delete, from `body`, all fields with `doNotSave` defined in the schema
+            personSchema.cleanup( body, 'doNotSave' );
+
+            // Write `body` to the database
+            // ...
+          }
+        }
+      })
+
+This ensures that all values are cast appropriately (everything in `req.body` is a string). It's easy to change requirements, and (more importantly) make sure that only the right parameters were passed.
+
+NOTE: It's not possible to implement an async function that performs per-field validation, because `castAndCheck()` itself is syncronous. While it would be _technically_ possible to turn `castAndCheck()` into an asyncronous function, this would be an overkill since most of them are there for trimmimg and general field fixing.
 
 ## The schema description
 
@@ -64,119 +105,64 @@ Note:
 
 ## What castAndCheck() does
 
-The `castAndCheck()` function takes as parameters 1) The object to manipulate 2) An array which will be populated with errors 3) An options object that will be passed to the functions.
+
+The `castAndCheck()` function takes as parameters 1) The object to manipulate 2) An array which will be populated with errors 3) An `options` object that will be passed to the functions.
     
 The function first of all takes the passed object and casts its values to the right type for the schema. This means that `"10"` (the string) will become `10` (the number) if the type is "number".
 
-It then applies all parameters passed in order.
+It then applies all parameters passed in order (the "check" phase).
 
-The `errors` array variable will be populated in case of problems. So, your code should check if the passed variable has grown after the `castAndCheck()`. The `errors` varialbe will be ab array of objects, in the format:
+The `errors` array variable will be populated in case of problems. So, your code should check if the passed variable has grown after the `castAndCheck()`. The `errors` varialbe will be an array of objects, in the format:
 
     [
       { field: 'nameOfFieldsWithProblems', message: 'Message to the user for this field', mustChange: true },
       { field: 'nameOfAnotherField', message: 'Message to the user for this other field', mustChange: false },
     ]
 
-As a result, when there is an error the module will simply `push()` to `errors`:
+### Parameters specific to `castAndCheck()`
 
-    if( typeof( r ) === 'string' ) p.errors.push( { field: p.fieldName, message: r, mustChange: true } );
-
-If the object has a field that is not in the schema, it will add an error for that field in `errors`.
-
-Note: in some cases, you want to define a schema, and then want to `castAndCheck()` to it with some exceptions. For example, you might want to `castAndCheck()` a new record, which doesn't yet have an ID. In this case you would:
+Note: in some cases, you want to define a schema, and then want to `castAndCheck()` to it with some exceptions. For example, you might want to `castAndCheck()` a new record, which doesn't yet have an ID. Basically, you want to apply `castAndCheck()`, but with some exceptions. In this case you would write:
 
     // Do schema cast and check for a new record
     self.schema.castAndCheck(  body, errors, { notRequired: [ '_id' ], skipCast: [ '_id' ]  } );
 
-## Cleaning up
+The option `skipCast` will ensure that no casting will be applied to the field; the option `notRequired` will ensure that no error is thrown if that field is missing alltogether.
 
-The module allows you to clean up all fields with a specific attribute set as a non-falsy value:
+## Extending a schema
 
-    var Schema = require( 'simpleschema' );
-    var errors = [];
+The basic schema is there to be extended. It's very easy to define new types (casting) and new parameters (field manipulation): all you need to do is create a new constructor that inherits from Schema, and add appropriately named methods.
 
-    personSchema = new Schema( {
-      name: { type: 'string', trim: 20 },
-      age: { type: 'number', default: 30, max: 140 },
-      rank: { type: 'number', default: 99, max: 99, doNotSave: true },
-    });
-
-    // Create an object
-    var obj = { name: "Tony", age: "30" };
-
-    // ...
-    personSchema.cleanup( obj, 'doNotSave' );
-
-This is handy when a web form submits extra data that is not for the database, and you want to clean the object up before writing the information to the database.
-
-
-## Async validator functions
-
-You might want to do some async validation. The in-field validation function is clearly syncronous, as it's meant to be used just for simple validation. However, you can also do more advanced async validation:
+For example:
 
     var Schema = require( 'simpleschema' );
-    var errors = [];
+    var NewSchema = declare( Schema, {
 
-    personSchema = new Schema(
-      {
-        name: { type: 'string', trim: 20 },
-        rank: { type: 'number', default: 99, max: 99 },
+      incrementByTypeParam: function( p ){
+        if( typeof( p.value ) !== 'number' ) return; // Only works with numbers
+        return p.value = p.value + p.definitionValue;
+      }, 
+
+      booleanTypeCast: function( definition, value, fieldName, failedCasts ){
+        if( value ) return 1;
+        return 0;
       },
-      {
-        // Function to validate a whole object asyncronously
-        // passed as an option to the schema
 
-        validate: function( object, schema, errors, cb ){
-           db.find({ name: object.name } , function( err, doc ){
-             if( err ){
-               cb( err );
-             } else {
-               if( doc.name != object.name ){
-                  errors.push( { field: 'name', message: 'Name mismatch!' } );
-               }
-               cb( null );
-             }
-           }
-        },
-
-
-      }
-    );
-
-    // Create an object
-    var obj = { name: "Tony", age: "30" };
-
-    // Cast the object, assigning defaults etc.
-    personSchema.castAndCheck( obj, errors, { myOption: 1 } ); //  { name: "Tony", age: 30, rank: 99 }
-    personSchema.validate( obj,  errors, function( err ){
-      if( err ){
-         next( err );
-      } else {
-
-        if( errors.length ){
-        // ...
-        }
-
-      }
     });
- 
-Asyncronous validation is much more complex. It's not possible to implement an async function that performs per-field validation, because `castAndCheck()` itself is syncronous. While it _is_ possible to turn `castAndCheck()` into an asyncronous function, this change will also imply a change in the mame of the module, from `simpleschema` to `complexschema`.
 
+Now in your schema you can have entries like:
 
-## Behind the scenes
-
-The Schema class is based on named helper functions.
+    age:     { type: 'number', incrementBy: 10 },
+    enabled: { type: 'boolean' },
 
 Everything happens in two phases: casting (using the internal function `_cast()`) and manipulation (using `_check()`).
 
-### Casting
+### Types
 
-For casting, for example, when `castAndCheck()` encounters:
+Types are defined by casting functions. When `castAndCheck()` encounters:
 
     surname: { type: 'string', lowercase: true },
 
 It looks into the schema for a function called `stringTypeCast`. It finds it, so it runs:
-
 
     stringTypeCast: function( definition, value, fieldName, failedCasts ){
 
@@ -198,8 +184,7 @@ Note that the casting function must:
 * EITHER return the cast value
 * OR return nothing, and add an entry to the fieldCasts hash
 
-
-### Checking
+### Parameters
 
 Parameters are based on the same principle. So, when `castAndCheck()` encounters:
  
@@ -226,134 +211,130 @@ The `p` parameter is a hash with the following values:
  *  `definition`: The full definition for that schema field (`{ type: 'number', incrementBy: 10 }`)
  *  `definitionValue`: The value for this particular parameter in the definition
  *  `schema`: The full schema,
- *  `errors`: The array that will be "augmented" with errors
- *  `options`: Options passed to the `castAndCheck()` function
+ *  `errors`: The array that will be "augmented" with errors if necessary
+ *  `options`: Options passed to the `castAndCheck()` (or `_check`) function
 
 
-## Extending a schema
+# API description
 
-The basic schema is there to be extended. It's very easy to define new types and new parameters: all you need to do is create a new constructor that inherits from Schema:
+This is the full list of functions available with this module:
 
-    var Schema = require( 'simpleschema' );
-    var NewSchema = declare( Schema, {
+## `constructor()`
 
-      incrementByTypeParam: function( p ){
-        if( typeof( p.value ) !== 'number' ) return;
-        return p.value = p.value + p.definitionValue;
-      }, 
-    });
+Parameters:  
+  * `schemaObject` The schema structure
+  * `options` An optional `options` object which can have:
+    * `validator` -- The validator function
 
-( _NOTE_ : if the function returns anything but `undefined`, the object's field is assigned to what is returned. So, if you don't want to change the object's value, just `return`.)
+## `xxxTypeCast()`
 
-Now in your schema you can have entries like:
+Parameters:  
+  * `definition` The schema structure. IF `_cast()` was called with option `onlyObjectValues` the object itself
+  * `value` The value of the object field
+  * `fieldName` The field name
+  * `failedCasts` An object which can be enriched if necessary. Each key is the fieldName of a failed cast 
 
-    age: { type: 'number', incrementBy: 10 },
+## `_cast()`
 
+Parameters:  
+  * `object` The object to cast
+  * `options` An optional options object.
+    * `onlyObjectValues` -- If true, only values already defined in the object will be case. If false, every field defined in the schema structure will be cast even if not present in the object in the first place
+    * `skipCast` -- An array of fields for which casting will be skipped
 
-# Use
+Returns:
+  * `failedCasts` An object which can be enriched if necessary. Each key is the fieldName of a failed cast 
 
-This module works well when casting and checking data coming from a web form. This is a typical use:
+NOTE: `options` is not passed to the xxxTypeCast function. Here, `options` solely defines how `_cast()` works
 
-TODO: CHECK THIS, MAKE SURE IT'S STILL OK, ESPECIALLY THE CLONING
+# `xxxTypeParam()`
 
-    var Schema = require( 'simpleschema' );
+Parameters:  
+  * `p` An associative array that will have the field described in the "parameters" paragraph above
 
-    formSubmit( req, res, next ){
+NOTE: `options` key is what was passed to `_check()` or `castAndCheck()`.
 
-      var errors = [];
+## `_check()`
 
-      personSchema = new Schema( {
-        name: { type: 'string', trim: 20, required: true },
-        age: { type: 'number', default: 30, max: 140 },
-        rank: { type: 'number', default: 99, max: 99, doNotSave: true },
-      });
+Parameters:  
+  * `object` The object to check/apply parameters to
+  * `objectBeforeCast` The object as it was _before_ casting. This is important as some checks will need to be performed to the object before casting actually happened
+  * `errors` An array of error objects with fields  `field`, `message` and `mustChange`
+  * `options` Options that will be passed to the `xxxTypeParam()` function
+  * `failedCasts` Every key is the fieldName of a failed cast. It comes from the `_cast()` function
 
-      // Make a copy of req.body
-      var body = Schema.clone( req.body );
-
-      // Do schema and callback functon checks. They will both add to `errors`
-      personSchema.castAndCheck( body, errors );
-
-      if( errors.length) {
-         // Do what you normally do when there is an error,
-         // ...
-      } else {
-        // ...
-
-        // use the body.rank attribute...
-
-        // Get the object ready to be written on the database. The field
-        // `rank` is not to be part of the DB
-        personSchema.cleanup( body, 'doNotSave' );
-
-        // Write `body` to the database
-      }
-
-This ensures that all values are cast appropriately (everything in `req.body` is a string). It's easy to change requirements, and (more importantly) make sure that only the right parameters were passed.
-
-TODO: ADD makeId as a class and object function as requirements
+NOTE: This function doesn't actively use `options` itself. Instead, it passed it to the `xxxTypeParam()` function. The values taken into account by the stock `xxxTypeParam()` functions are: `onlyObjectValues()` and `notRequired`, both in the `requiredTypeParam()` function. However, other non-core functions might use extra parameters.
 
 
-SimpleSchemaMongo
-=================
+## `_castAndCheck()`
 
-TODO: Fix this so that it has the latest Mongo mixin, explained
+Parameters:  
+  * `object` The object to cast and check
+  * `errors` An array of error objects with fields  `field`, `message` and `mustChange`
+  * `options` Options that will be passed to the `_check()` function, whic in turn will pass it to the `xxxTypeParam()` functions
 
+## `cleanup()`
 
-
-This module is now Obsolete. Do NOT use it!!!
-Use instead [SimpleSchema](https://github.com/mercmobily/SimpleSchema) which includes optional mixins to add features to SimpleSchema.
-
-
-This is a constructor class deriving from [SimpleSchema](https://github.com/mercmobily/SimpleSchema), adding Mongo-specific functions.
-
-## Mongo extras
-
-First of all, every field of type "id" is now cast to a MongoDb ObjectId field. If casting fails, the `error` array is populated with an entry describing the problem.
-
-There is also a class function, `makeId()`, which can be used to create object Ids from scratch( without passing a parameter). This is especially handy when assigning it a default.
-
-## Use-case
-
-    var Schema = require( 'simpleschema-mongo' );
-    var errors = [];
-
-    personSchema = new Schema( {
-      name: { type: 'string', trim: 20 },
-      age: { type: 'number', default: 30, max: 140 },
-      rank: { type: 'number', default: 99, max: 99 },
-      parent: { type: 'id', default: Schema.makeId() },
-    });
-
-    // Create an object
-    var obj1 = { name: "Tony", age: "30" };
-
-    // Create another object
-    var obj2 = { name: "Tony", age: "30", parent: "invalid_id" };
-
-    personSchema.castAndCheck( obj1, errors );
-    // obj1 => { name: "Tony", age: 30, rank: 99, parent: ObjectId('123456789012345678901234') }
-    // errors:  []
-
-    personSchema.castAndCheck( obj2, errors );
-    // obj2 => { name: "Tony", age: 30, rank: 99, parent: 'invalid_id' }
-    // errors: [ { field: 'id', error: 'Error during casting' } ]
-
-   
-  
-## Pre-assign IDs
-
-You can use `Schema.makeId` with the `default` parameter when creating a new record and you want to set _id client-side:
-
-    var Schema = require( 'simpleschema-mongo' );
-    var errors = [];
-
-    personSchema = new Schema( {
-      _id: { type: 'id', default: Schema.makeId() },
-      name: { type: 'string', trim: 20 },
-    });
-
-    var obj = { name: "Tony" };
-
-    personSchema.castAndCheck( obj, errors ); // { name: 'Tony', _id: 5136cc1f01a2e62b3e000001 }
+Parameters:  
+  * `object` The object to cleanup
+  * `parameterName` The name of the parameter that will be hunted down. Any field that in the schema structure has thar parameter fill be deleted from `object`
  
+
+## `validate()`
+
+Parameters:  
+  * `object` The object to async validate
+  * `errors` An array of error objects with fields  `field`, `message` and `mustChange`
+  * `cb` The callback, called once the schema's `validation()` function has been called
+
+
+## `clone()`
+
+Parameters:  
+  * `object` The object to clone
+
+## `makeId()`
+
+Parameters:  
+  * `object` The object for which the unique ID will be created
+  * `cb` The callback to call once the ID is created
+
+NOTE: the `makeId()` function is likely to be overridden by driver-specific ones.
+
+
+## "Class" (or "constructor function") functions
+
+The "Class" itself has the methods `clone()` and `makeId()` available. They are useful as "Class" functions as they might get used by an application while _creating_ an object.
+
+
+# Driver-specific Mixins
+
+Basic schemas work really well for any database. However, it's handy to have driver-specific schemas which take into consideration driver-specific features.
+
+Driver-specific schemas come in the form of `mixins`: they are basic classes that should be "mixed in" with the main one.
+
+For example:
+
+    var Schema = require('simpleschema')
+    var MongoSchemaMixin = require('simpleschema/MongoSchemaMixin.js')
+
+
+    // Mixing in Schema (the basic class) with MongoSchemaMixin
+    MyMongoSchema = declare( [ Schema, MongoSchemaMixin ] );
+
+    person = new MyMongoSchema({
+      // ...
+    });
+
+
+## MongoSchemaMixin
+
+The MongoSchemaMixin overloads the following functions:
+
+  * `idTypeCast()` It will cast a field to Mongo's own `ObjectId` type. If the field is not valid, it will fail (by adding a key to `failedCasts`)
+  * `makeId()` Rather than using the default id creator, which by default just returns a random number, the overloaded `makeId()` will use Mongo's own `ObjectId()` function. NOTE: `makeId()` is available as an object method, _and_ as a class method
+
+
+## MariaSchemaMixin
+
+Coming when MySql support is added

@@ -176,7 +176,6 @@ var SimpleSchema = declare( null, {
     var options = typeof(options) === 'undefined' ? {} : options;
     var targetObject;
 
-
     // Set the targetObject. If the target is the object itself,
     // then missing fields won't be a problem
     if( options.onlyObjectValues ) targetObject = object;
@@ -186,7 +185,7 @@ var SimpleSchema = declare( null, {
   
       definition = this.structure[ fieldName ];
  
-      // If the definition is undefined, and it's an onject-oriented check,
+      // If the definition is undefined, and it's an object-values only check,
       // then the missing definition mustn't be a problem.
       if( typeof(definition) === 'undefined' && options.onlyObjectValues ) continue;
 
@@ -208,37 +207,6 @@ var SimpleSchema = declare( null, {
     return failedCasts; 
   },
 
-/*
-  _castObjectValues: function( object, options ){
-
-    var type, failedCasts = {};
-    var options = typeof(options) === 'undefined' ? {} : options;
-
-    // Scan passed object
-    for( var fieldName in object ){
-
-      // Skip casting if so required
-      if( Array.isArray( options.skipCast )  && options.skipCast.indexOf( fieldName ) != -1  ){
-        continue;
-      }
-  
-      definition = this.structure[ fieldName ];
-  
-      if( typeof(definition) === 'undefined' ) continue;
-  
-      // Run the xxxTypeCast function for a specific type
-      if( typeof( this[ definition.type + 'TypeCast' ]) === 'function' ){
-        var result = this[ definition.type + 'TypeCast' ](definition, object[ fieldName ], fieldName, failedCasts );
-        if( typeof( result ) !== 'undefined' ) object[ fieldName ] = result;
-      } else {
-        throw( new Error("No casting function found, type probably wrong: " + definition.type ) );
-      }
-
-    }
-    return failedCasts; 
-  },
-*/
- 
   _check: function( object, objectBeforeCast, errors, options, failedCasts ){
   
     var type;
@@ -313,8 +281,8 @@ var SimpleSchema = declare( null, {
 
   validate: function( object, errors, cb ){
 
-    if( typeof( this.options ) === 'object'  && typeof( this.options.validate) === 'function' ){
-      this.options.validate.call( object, this, errors, cb );
+    if( typeof( this.options ) === 'object'  && typeof( this.options.validator) === 'function' ){
+      this.options.validator.call( object, this, errors, cb );
     } else {
       cb( null, true );
     }
