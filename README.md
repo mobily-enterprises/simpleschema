@@ -121,9 +121,9 @@ The `errors` array variable will be populated in case of problems. So, your code
 ### Parameters passed to `castAndParams()`
 
 
-castAndParams accepts an `options` object where the following keys are considered:
+`castAndParams()` accepts an `options` object where the following keys are considered:
 
-  * `onlyObjectValues` The `required` parameter won't apply, and casting won't happen, for fields that are not defined in the object
+  * `onlyObjectValues` The `required` parameter won't apply, and casting won't happen, for fields that are not defined in the object. This is useful when casting partial objects (objects where some fields are missing, but the fields that _are_ there should be cast)
   * `skipcast` A list of keys for which casting won't happen. Normally used with `notRequired`
   * `notRequired` A list of keys for which the `required` parameter won't apply. Normally used with `skipCast`
 

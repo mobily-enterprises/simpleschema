@@ -77,20 +77,21 @@ var SimpleSchema = declare( null, {
   // Basic parameters
  
   minTypeParam: function( p ){
-    if( p.definition.type === 'number' && p.value < p.parameterValue ){
+
+    if( p.definition.type === 'number' && p.value && p.value < p.parameterValue ){
       p.errors.push( { field: p.fieldName, message: 'Field is too low: ' + p.fieldName } );
     }
-    if( p.definition.type === 'string' && p.value.length < p.parameterValue ){
+    if( p.definition.type === 'string' && p.value && p.value.length < p.parameterValue ){
       p.errors.push( { field: p.fieldName, message: 'Field is too short: ' + p.fieldName } );
     }
   },
 
   maxTypeParam: function( p ){
-    if( p.definition.type === 'number' && p.value > p.parameterValue ){
+    if( p.definition.type === 'number' && p.value && p.value > p.parameterValue ){
       p.errors.push( { field: p.fieldName, message: 'Field is too high: ' + p.fieldName } );
     }
 
-    if( p.definition.type === 'string' && p.value.length > p.parameterValue ){
+    if( p.definition.type === 'string' && p.value && p.value.length > p.parameterValue ){
       p.errors.push( { field: p.fieldName, message: 'Field is too long: ' + p.fieldName } );
     }
 
@@ -155,7 +156,8 @@ var SimpleSchema = declare( null, {
   },
 
   notEmptyTypeParam: function( p ){
-    if( ! Array.isArray( p.value ) && p.objectBeforeCast[ p.fieldName ] == '' ) {
+    // if( ! Array.isArray( p.value ) && ( typeof( p.objectBeforeCast[ p.fieldName ]) === 'undefined' || p.objectBeforeCast[ p.fieldName ] == '')) {
+    if( ! Array.isArray( p.value ) &&  p.objectBeforeCast[ p.fieldName ] == '') {
       p.errors.push( { field: p.fieldName, message: 'Field cannot be empty: ' + p.fieldName, mustChange: true } );
     }
   },
