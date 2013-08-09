@@ -1,3 +1,13 @@
+/*
+Copyright (C) 2013 Tony Mobily
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
 var 
   dummy
 , declare = require('simpledeclare')
@@ -189,13 +199,18 @@ var SimpleSchema = declare( null, {
  
       // If the definition is undefined, and it's an object-values only check,
       // then the missing definition mustn't be a problem.
-      if( typeof(definition) === 'undefined' && options.onlyObjectValues ) continue;
+      if( typeof( definition ) === 'undefined' && options.onlyObjectValues ) continue;
 
-      // Skip casting if so required
+      // Skip casting if so required by the skipCast array
       if( Array.isArray( options.skipCast )  && options.skipCast.indexOf( fieldName ) != -1  ){
         continue;
       }
- 
+
+      // Skip casting if value is undefined AND required is false in schema
+      if( !definition.required && typeof( object[ fieldName ] ) === 'undefined' ){
+        continue;
+      }
+
       // Run the xxxTypeCast function for a specific type
       if( typeof( this[ definition.type + 'TypeCast' ]) === 'function' ){
         var result = this[ definition.type + 'TypeCast' ](definition, object[ fieldName ], fieldName, failedCasts );

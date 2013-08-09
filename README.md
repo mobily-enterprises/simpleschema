@@ -99,7 +99,7 @@ Note:
  * `min`, `max` on `string`s will check the string length; on `number`s will check number value
  * `uppercase`, `lowercase`, `trim` only apply to `string`s
  * `required` will fail if the  object's corresponding attribute (before casting) was `undefined` and will never fail for arrays; note: you can pass the option `notRequired: [ 'one', 'two' ]` to `castAndParams()` if you want to override the field-level `required` option.
- * `notEmpty` will fail if the  object's corresponding attribute was `v == ''` (note the weak `=`) and will never fail for arrays
+ * `notEmpty` will fail if the  object's corresponding attribute was `v == ''` (note the weak `==`) and will never fail for arrays
  * If `validatorFunc` returns a string, then an error will be added for that field
 
 
@@ -270,7 +270,7 @@ Parameters:
 Returns:
   * `failedCasts` An object which can be enriched if necessary. Each key is the fieldName of a failed cast 
 
-NOTE: `options` is not passed to the xxxTypeCast function. Here, `options` solely defines how `_cast()` works
+NOTE: `options` is not passed to the xxxTypeCast function. Here, `options` solely defines how `_cast()` works. ALSO, note that if  `definition.required` is `false` and the object value is `undefined`, casting won't happen.
 
 # `xxxTypeParam()`
 
