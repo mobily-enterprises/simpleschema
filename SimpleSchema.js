@@ -29,6 +29,10 @@ var SimpleSchema = declare( null, {
 
   // Basic types
 
+  noneTypeCast: function( definition, value, fieldName, failedCasts ){
+   return value;
+  },
+
   stringTypeCast: function( definition, value, fieldName, failedCasts ){
 
     // Undefined: return '';
@@ -141,11 +145,52 @@ var SimpleSchema = declare( null, {
     }
   },
 
-  serializeTypeParam: function( p ){
+  __DELETED__serializeTypeParam: function( p ){
     if( p.value ){
       p.object[ p.fieldName ] = JSON.stringify( p.value );
     }
   },
+
+  serializeTypeCast: function( definition, value, fieldName, failedCasts ){
+
+    var r;
+
+    // CASE #1: it's a string. Serialise it
+    if( typeof( value ) === 'string' ){
+
+      try {
+          // Attempt to stringify
+          r = JSON.parse( value );
+
+          // It worked: return r
+          return r;
+      } catch( e ){
+        failedCasts[ fieldName ] = true;
+        return;
+      }
+
+    // CASE #2: it's anything but a string. Serialise it.
+    } else {
+
+      try {
+          // Attempt to stringify
+          r = JSON.stringify( value );
+
+          // It worked: return r
+          return r;
+      } catch( e ){
+        failedCasts[ fieldName ] = true;
+        return;
+      }
+
+    // 
+    } 
+
+  },
+
+
+
+
 
   requiredTypeParam: function( p ){
 
@@ -173,19 +218,15 @@ var SimpleSchema = declare( null, {
   },
 
 
+  // Options and values used:
+  //  * options.onlyObjectValues             -- Will apply cast for existing object's keys rather than the schema itself
+  //  * options.skipCast                     -- To know what casts need to be skipped
+  //  * this.structure[ fieldName ].required -- To skip cast if it's `undefined` and it's NOT required
+  //
   _cast: function( object, options ){
  
-  /*
-      schema: {
-        longName: { type: 'string', required: true, notEmpty: true, trim: 35 },
-        tag     : { type: 'number', notEmpty: true, max: 30 },
-        _id     : { type: 'id', required: true },
-        _tabId  : { type: 'id', doNotSave: true },
-      }
-    */
-  
     var type, failedCasts = {};
-    var options = typeof(options) === 'undefined' ? {} : options;
+    var options = typeof( options ) === 'undefined' ? {} : options;
     var targetObject;
 
     // Set the targetObject. If the target is the object itself,
@@ -243,6 +284,10 @@ var SimpleSchema = declare( null, {
 
     // Scan schema
     for( var fieldName in this.structure ){
+
+      // The `onlyObjectValues` option is on: skip anything that is not in the object
+      if( options.onlyObjectValues && typeof( object[ fieldName ] ) === 'undefined' ) continue;
+
       if( ! failedCasts[ fieldName ] ) {
         definition = this.structure[ fieldName ];
 
