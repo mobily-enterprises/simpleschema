@@ -88,6 +88,50 @@ var SimpleSchema = declare( null, {
     return Array.isArray( value ) ? value : [ value ]
   },
 
+
+  serializeTypeCast: function( definition, value, fieldName, failedCasts ){
+
+    var r;
+
+    // CASE #1: it's a string. Serialise it
+    if( typeof( value ) === 'string' ){
+
+      try {
+          // Attempt to stringify
+          r = JSON.parse( value );
+
+          // It worked: return r
+          return r;
+      } catch( e ){
+        failedCasts[ fieldName ] = true;
+        return;
+      }
+
+    // CASE #2: it's anything but a string. Serialise it.
+    } else {
+
+      try {
+          // Attempt to stringify
+          r = JSON.stringify( value );
+
+          // It worked: return r
+          return r;
+      } catch( e ){
+        failedCasts[ fieldName ] = true;
+        return;
+      }
+
+    // 
+    } 
+  },
+
+  // Cast an ID for this particular engine. If the object is in invalid format, it won't
+  // get cast, and as a result check will fail
+  idTypeCast: function( definition, value,  fieldName, failedCasts ){
+    return value;
+  },
+
+
   // Basic parameters
  
   minTypeParam: function( p ){
@@ -150,46 +194,6 @@ var SimpleSchema = declare( null, {
       p.object[ p.fieldName ] = JSON.stringify( p.value );
     }
   },
-
-  serializeTypeCast: function( definition, value, fieldName, failedCasts ){
-
-    var r;
-
-    // CASE #1: it's a string. Serialise it
-    if( typeof( value ) === 'string' ){
-
-      try {
-          // Attempt to stringify
-          r = JSON.parse( value );
-
-          // It worked: return r
-          return r;
-      } catch( e ){
-        failedCasts[ fieldName ] = true;
-        return;
-      }
-
-    // CASE #2: it's anything but a string. Serialise it.
-    } else {
-
-      try {
-          // Attempt to stringify
-          r = JSON.stringify( value );
-
-          // It worked: return r
-          return r;
-      } catch( e ){
-        failedCasts[ fieldName ] = true;
-        return;
-      }
-
-    // 
-    } 
-
-  },
-
-
-
 
 
   requiredTypeParam: function( p ){
@@ -355,6 +359,8 @@ var SimpleSchema = declare( null, {
   clone: function( obj ){
     return SimpleSchema.clone( obj );
   },
+
+
 
   // The default id maker (just return a random number )
   // available as an object method
