@@ -1,6 +1,14 @@
 SimpleSchema
 =============
 
+PLEASE NOTE
+===========
+
+The module is going through some _major_ _major_ changes right now. The API is very different, and the way it works is being improved by 1 million times.
+Please come back in a bit to see the amended documentation!
+
+
+
 SimpleSchema is a _simple_ library to cast, and validate, objects.
 It uses [SimpleDeclare - Github](https://github.com/mercmobily/simpleDeclare) in order to define a class. I strongly recommend using SimpleDeclare to create derivative schemas (which are very easy to create).
 
