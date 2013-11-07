@@ -192,19 +192,8 @@ var SimpleSchema = declare( null, {
 
   requiredTypeParam: function( p ){
 
-    // If onlyObjectValues is on, then required mustn't be effective
-    if( p.options.onlyObjectValues ) return;
-
     if( typeof( p.object[ p.fieldName ]) === 'undefined'  && p.parameterValue ){
-
-      // Callers can set exceptions to the rule through `option`. This is crucial
-      // to exclude some IDs (for example, POST doesn't have an recordId even though
-      // recordId is marked as `required` in the schema
-      if( !( Array.isArray( p.options.notRequired )  && p.options.notRequired.indexOf( p.fieldName ) != -1  ) ){
-
-        // The error is definitely there!
-        p.errors.push( { field: p.fieldName, message: 'Field required:' + p.fieldName, mustChange: true } );
-      }
+      p.errors.push( { field: p.fieldName, message: 'Field required:' + p.fieldName, mustChange: true } );
     }
   },
 
@@ -219,13 +208,15 @@ var SimpleSchema = declare( null, {
   // Options and values used: (does NOT pass options to cast functions)
   //  * options.onlyObjectValues             -- Will apply cast for existing object's keys rather than the schema itself
   //  * options.skipCast                     -- To know what casts need to be skipped
+  // 
   //  * this.structure[ fieldName ].required -- To skip cast if it's `undefined` and it's NOT required
   //
-  _cast: function( object, options ){
+  _cast: function( object, options, cb ){
  
     var type, failedCasts = {};
     var options = typeof( options ) === 'undefined' ? {} : options;
     var targetObject;
+    var resultObject = {};
 
     // Set the targetObject. If the target is the object itself,
     // then missing fields won't be a problem
@@ -234,7 +225,11 @@ var SimpleSchema = declare( null, {
 
     for( var fieldName in targetObject ){
   
+      // Getting the definition
       definition = this.structure[ fieldName ];
+
+      // Copying the value over
+      if( typeof( object[ fieldName ] ) !== 'undefined' ) resultObject[ fieldName ] = object[ fieldName ];
  
       // If the definition is undefined, and it's an object-values only check,
       // then the missing definition mustn't be a problem.
@@ -253,29 +248,38 @@ var SimpleSchema = declare( null, {
       // Run the xxxTypeCast function for a specific type
       if( typeof( this[ definition.type + 'TypeCast' ]) === 'function' ){
         var result = this[ definition.type + 'TypeCast' ](definition, object[ fieldName ], fieldName, failedCasts );
-        if( typeof( result ) !== 'undefined' ) object[ fieldName ] = result;
+        if( typeof( result ) !== 'undefined' ) resultObject[ fieldName ] = result;
 
       } else {
         throw( new Error("No casting function found, type probably wrong: " + definition.type ) );
       }
 
     }
-    return failedCasts; 
+
+    // That's it -- return resulting Object
+    cb( null, resultObject, failedCasts ); 
+
   },
 
   // Options and values used: (It DOES pass options to cast functions)
   //  * options.onlyObjectValues             -- Will skip appling parameters if undefined and options.onlyObjectValues is true
-  _params: function( object, objectBeforeCast, errors, options, failedCasts ){
+  //  * options.skipParamsForFields          -- Won't apply specific params for specific fields
+
+  _params: function( object, objectBeforeCast, options, failedCasts, cb ){
   
     var type;
     var options = typeof(options) === 'undefined' ? {} : options;
   
-    if( ! Array.isArray( errors ) ) errors = [];
+    var errors = [];
+    var resultObject = {}
 
     // Scan passed object, check if there are extra fields that shouldn't
     // be there
     for( var k in object ){
  
+      // Copy values over to the new object about to be returned
+      if( typeof( object[ k ]) !== 'undefined' ) resultObject[ k ] = object[ k ];
+
       // First of all, if it's not in the schema, it's not allowed
       if( typeof( this.structure[ k ] ) === 'undefined' ){
         errors.push( { field: k, message: 'Field not allowed: ' + k, mustChange: false } );
@@ -293,6 +297,14 @@ var SimpleSchema = declare( null, {
 
          // Run specific functions based on the passed options
         for( var parameter in definition ){
+
+          // If it's to be skipped, we shall skip -- e.g. `options.skipParams == { tabId: 'required' }` to
+          // skip `required` parameter for `tabId` field
+          if( typeof( options.skipParams ) === 'object' && options.skipParams !== null ){
+            var skipParamsForFields = options.skipParams[ fieldName ];
+            if( Array.isArray( skipParamsForFields ) && skipParamsForFields.indexOf( parameter)  ) continue;
+          }
+
           if( parameter != 'type' ){
             if( typeof( this[ parameter + 'TypeParam' ]) === 'function' ){
               var result = this[ parameter + 'TypeParam' ]({
@@ -306,31 +318,65 @@ var SimpleSchema = declare( null, {
                 errors: errors,
                 options: options,
               } );
-              if( typeof( result ) !== 'undefined' ) object[ fieldName ] = result;
+              if( typeof( result ) !== 'undefined' ) resultObject[ fieldName ] = result;
             }
           }   
         }
       }   
     }
+    cb( null, resultObject, errors );
+
   },
 
+  _validate: function( object, cb ){
 
-  castAndParamsAndValidate: function( object, errors, options, cb ){
-   
-    var originalObject = this.clone( object );
+    if( typeof( this.options ) === 'object'  && typeof( this.options.validator) === 'function' ){
+      this.options.validator.call( object, this, cb );
+    } else {
+      cb( null, [] );
+    }
+  },
+
+  // Options and values used (the ones used by _cast() and _params() together)
+  //
+  //  * options.onlyObjectValues             -- Will apply cast for existing object's keys rather than the schema itself
+  //  * options.skipCast                     -- To know what casts need to be skipped
+  //  * options.skipParamsForFields          -- Won't apply specific params for specific fields
+  // 
+  //  * this.structure[ fieldName ].required -- To skip cast if it's `undefined` and it's NOT required
+  //
+  // Note that the only special parameter is 'required' -- it's only special because _cast() won't cast
+  // it if it's `undefined` and it's not required. Otherwise, casting will make validation fail for unrequired and absent values
+  //
+  // This will run _cast, _param and _validate
+  validate: function( originalObject, options, cb ){
+  
+    var self = this;
+ 
     if( typeof( cb ) === 'undefined' ){
       cb = options;
       options = {}
     }
 
-    failedCasts = this._cast( object, options );
-    Object.keys( failedCasts ).forEach( function( fieldName ){
-      errors.push( { field: fieldName, message: "Error during casting" } );
-    });
-   
-    this._params( object, originalObject, errors, options, failedCasts ); 
+    self._cast( originalObject, options, function( err, castObject, failedCasts ){
+      if( err ){
+        cb( err );
+      } else {
+        self._params( castObject, originalObject, options, failedCasts, function( err, paramObject, errors ){
 
-    this.validate( object,  errors, cb );
+          Object.keys( failedCasts ).forEach( function( fieldName ){
+            errors.push( { field: fieldName, message: "Error during casting" } );
+          });
+          self._validate( paramObject, function( err, validateErrors ) {
+            if( err ){
+              cb( err );
+            } else {
+              cb( null, paramObject, Array.prototype.concat( errors, validateErrors ) );
+            }
+          });
+        })
+      }
+    });
     
   },
 
@@ -346,15 +392,6 @@ var SimpleSchema = declare( null, {
     return newObject;
   },
 
-
-  validate: function( object, errors, cb ){
-
-    if( typeof( this.options ) === 'object'  && typeof( this.options.validator) === 'function' ){
-      this.options.validator.call( object, this, errors, cb );
-    } else {
-      cb( null, true );
-    }
-  },
 
 
   // Clone function available as an object method
