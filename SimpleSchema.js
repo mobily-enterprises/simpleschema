@@ -189,12 +189,6 @@ var SimpleSchema = declare( null, {
     }
   },
 
-  __DELETED__serializeTypeParam: function( p ){
-    if( p.value ){
-      p.object[ p.fieldName ] = JSON.stringify( p.value );
-    }
-  },
-
 
   requiredTypeParam: function( p ){
 
@@ -222,7 +216,7 @@ var SimpleSchema = declare( null, {
   },
 
 
-  // Options and values used:
+  // Options and values used: (does NOT pass options to cast functions)
   //  * options.onlyObjectValues             -- Will apply cast for existing object's keys rather than the schema itself
   //  * options.skipCast                     -- To know what casts need to be skipped
   //  * this.structure[ fieldName ].required -- To skip cast if it's `undefined` and it's NOT required
@@ -269,6 +263,8 @@ var SimpleSchema = declare( null, {
     return failedCasts; 
   },
 
+  // Options and values used: (It DOES pass options to cast functions)
+  //  * options.onlyObjectValues             -- Will skip appling parameters if undefined and options.onlyObjectValues is true
   _params: function( object, objectBeforeCast, errors, options, failedCasts ){
   
     var type;
@@ -319,9 +315,13 @@ var SimpleSchema = declare( null, {
   },
 
 
-  castAndParams: function( object, errors, options ){
+  castAndParamsAndValidate: function( object, errors, options, cb ){
    
     var originalObject = this.clone( object );
+    if( typeof( cb ) === 'undefined' ){
+      cb = options;
+      options = {}
+    }
 
     failedCasts = this._cast( object, options );
     Object.keys( failedCasts ).forEach( function( fieldName ){
@@ -329,8 +329,10 @@ var SimpleSchema = declare( null, {
     });
    
     this._params( object, originalObject, errors, options, failedCasts ); 
-  },
 
+    this.validate( object,  errors, cb );
+    
+  },
 
 
   cleanup: function( object, parameterName ){
