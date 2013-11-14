@@ -33,14 +33,14 @@ var MongoSchemaMixin = declare( null, {
     }
   },
 
- // The default id maker (just return a random number )
-  // available as an object method
+  // The default id maker available as an object method
   makeId: function( object, cb ){
     MongoSchemaMixin.makeId( object, cb );
   },
 
 });
 
+// The default id maker
 MongoSchemaMixin.makeId = function( object, cb ){
   cb( null, ObjectId() );
 },
