@@ -27,16 +27,17 @@ var SimpleSchema = declare( null, {
   },
 
 
-  // Basic types
+  // Built-in types
 
-  noneTypeCast: function( definition, value, fieldName, failedCasts ){
+  noneTypeCast: function( definition, value, fieldName, options,failedCasts ){
    return value;
   },
 
-  stringTypeCast: function( definition, value, fieldName, failedCasts ){
+  stringTypeCast: function( definition, value, fieldName, options, failedCasts ){
 
     // Undefined: return '';
     if( typeof( value ) === 'undefined' ) return '';
+    if( value === null ) return '';
 
     // No toString() available: failing to cast
     if( typeof( value.toString ) === 'undefined' ){
@@ -48,7 +49,7 @@ var SimpleSchema = declare( null, {
     return value.toString();
   },
 
-  numberTypeCast: function( definition, value,  fieldName, failedCasts ){
+  numberTypeCast: function( definition, value,  fieldName, options,failedCasts ){
 
     // Undefined: return 0;
     if( typeof( value ) === 'undefined' ) return 0;
@@ -65,7 +66,7 @@ var SimpleSchema = declare( null, {
 
   },
  
-  dateTypeCast:function( definition, value, fieldName, failedCasts ){
+  dateTypeCast:function( definition, value, fieldName, options, failedCasts ){
 
     // Undefined: return empty date
     if( typeof( value ) === 'undefined' ){
@@ -84,12 +85,12 @@ var SimpleSchema = declare( null, {
     
   },
 
-  arrayTypeCast: function( definition, value, fieldName, failedCasts){
+  arrayTypeCast: function( definition, value, fieldName, options, failedCasts){
     return Array.isArray( value ) ? value : [ value ]
   },
 
 
-  serializeTypeCast: function( definition, value, fieldName, failedCasts ){
+  serializeTypeCast: function( definition, value, fieldName, options, failedCasts ){
 
     var r;
 
@@ -127,12 +128,13 @@ var SimpleSchema = declare( null, {
 
   // Cast an ID for this particular engine. If the object is in invalid format, it won't
   // get cast, and as a result check will fail
-  idTypeCast: function( definition, value,  fieldName, failedCasts ){
+  idTypeCast: function( definition, value,  fieldName, options, failedCasts ){
     return value;
   },
 
 
-  // Basic parameters
+
+  // Built-in parameters
  
   minTypeParam: function( p ){
 
@@ -160,7 +162,7 @@ var SimpleSchema = declare( null, {
       throw( new Error("Validator function needs to be a function, found: " + typeof( p.parameterValue ) ) );
 
     var r = p.parameterValue.call( p.object, p.object[ p.fieldName ], p.fieldName, p.schema );
-    if( typeof( r ) === 'string' ) p.errors.push( { field: p.fieldName, message: r, mustChange: true } );
+    if( typeof( r ) === 'string' ) p.errors.push( { field: p.fieldName, message: r } );
   },
 
   uppercaseTypeParam: function( p ){
@@ -193,14 +195,14 @@ var SimpleSchema = declare( null, {
   requiredTypeParam: function( p ){
 
     if( typeof( p.object[ p.fieldName ]) === 'undefined'  && p.parameterValue ){
-      p.errors.push( { field: p.fieldName, message: 'Field required:' + p.fieldName, mustChange: true } );
+      p.errors.push( { field: p.fieldName, message: 'Field required:' + p.fieldName } );
     }
   },
 
   notEmptyTypeParam: function( p ){
     // if( ! Array.isArray( p.value ) && ( typeof( p.objectBeforeCast[ p.fieldName ]) === 'undefined' || p.objectBeforeCast[ p.fieldName ] == '')) {
     if( ! Array.isArray( p.value ) &&  p.objectBeforeCast[ p.fieldName ] == '') {
-      p.errors.push( { field: p.fieldName, message: 'Field cannot be empty: ' + p.fieldName, mustChange: true } );
+      p.errors.push( { field: p.fieldName, message: 'Field cannot be empty: ' + p.fieldName } );
     }
   },
 
@@ -229,13 +231,14 @@ var SimpleSchema = declare( null, {
       definition = this.structure[ fieldName ];
 
       // Copying the value over
-      if( typeof( object[ fieldName ] ) !== 'undefined' ) resultObject[ fieldName ] = object[ fieldName ];
+      if( typeof( object[ fieldName ] ) !== 'undefined' ) resultObject[ fieldName ] = object[ fieldName ] ;
  
       // If the definition is undefined, and it's an object-values only check,
       // then the missing definition mustn't be a problem.
       if( typeof( definition ) === 'undefined' && options.onlyObjectValues ) continue;
 
       // Skip casting if so required by the skipCast array
+       
       if( Array.isArray( options.skipCast )  && options.skipCast.indexOf( fieldName ) != -1  ){
         continue;
       }
@@ -247,7 +250,7 @@ var SimpleSchema = declare( null, {
 
       // Run the xxxTypeCast function for a specific type
       if( typeof( this[ definition.type + 'TypeCast' ]) === 'function' ){
-        var result = this[ definition.type + 'TypeCast' ](definition, object[ fieldName ], fieldName, failedCasts );
+        var result = this[ definition.type + 'TypeCast' ](definition, object[ fieldName ], fieldName, options, failedCasts );
         if( typeof( result ) !== 'undefined' ) resultObject[ fieldName ] = result;
 
       } else {
@@ -263,7 +266,7 @@ var SimpleSchema = declare( null, {
 
   // Options and values used: (It DOES pass options to cast functions)
   //  * options.onlyObjectValues             -- Will skip appling parameters if undefined and options.onlyObjectValues is true
-  //  * options.skipParamsForFields          -- Won't apply specific params for specific fields
+  //  * options.skipParams          -- Won't apply specific params for specific fields
 
   _params: function( object, objectBeforeCast, options, failedCasts, cb ){
   
@@ -273,17 +276,17 @@ var SimpleSchema = declare( null, {
     var errors = [];
     var resultObject = {}
 
-    // Scan passed object, check if there are extra fields that shouldn't
-    // be there
-    for( var k in object ){
- 
-      // Copy values over to the new object about to be returned
-      if( typeof( object[ k ]) !== 'undefined' ) resultObject[ k ] = object[ k ];
 
-      // First of all, if it's not in the schema, it's not allowed
+   // First of all, if it's not in the schema, it's not allowed
+    for( var k in objectBeforeCast ){
       if( typeof( this.structure[ k ] ) === 'undefined' ){
-        errors.push( { field: k, message: 'Field not allowed: ' + k, mustChange: false } );
+        errors.push( { field: k, message: 'Field not allowed: ' + k } );
       }
+    }
+
+    // Copying object into resultObject
+    for( var k in object ){
+      if( typeof( object[ k ]) !== 'undefined' ) resultObject[ k ] = object[ k ];
     }
 
     // Scan schema
@@ -301,16 +304,17 @@ var SimpleSchema = declare( null, {
           // If it's to be skipped, we shall skip -- e.g. `options.skipParams == { tabId: 'required' }` to
           // skip `required` parameter for `tabId` field
           if( typeof( options.skipParams ) === 'object' && options.skipParams !== null ){
-            var skipParamsForFields = options.skipParams[ fieldName ];
-            if( Array.isArray( skipParamsForFields ) && skipParamsForFields.indexOf( parameter)  ) continue;
+            var skipParams = options.skipParams[ fieldName ];
+            if( Array.isArray( skipParams ) && skipParams.indexOf( parameter) !== -1  ) continue;
           }
 
           if( parameter != 'type' ){
             if( typeof( this[ parameter + 'TypeParam' ]) === 'function' ){
               var result = this[ parameter + 'TypeParam' ]({
-                value: object[ fieldName ],
-                object: object,
+                value: resultObject[ fieldName ],
+                object: resultObject,
                 objectBeforeCast: objectBeforeCast,
+                objectBeforeParams: object,
                 fieldName: fieldName,
                 definition: definition,
                 parameterValue: definition[ parameter ],
@@ -328,10 +332,10 @@ var SimpleSchema = declare( null, {
 
   },
 
-  _validate: function( object, cb ){
+  _validate: function( finalObject, originalObject, castObject, options, cb ){
 
     if( typeof( this.options ) === 'object'  && typeof( this.options.validator) === 'function' ){
-      this.options.validator.call( object, this, cb );
+      this.options.validator( finalObject, originalObject, castObject, options, cb );
     } else {
       cb( null, [] );
     }
@@ -341,7 +345,7 @@ var SimpleSchema = declare( null, {
   //
   //  * options.onlyObjectValues             -- Will apply cast for existing object's keys rather than the schema itself
   //  * options.skipCast                     -- To know what casts need to be skipped
-  //  * options.skipParamsForFields          -- Won't apply specific params for specific fields
+  //  * options.skipParams                   -- Won't apply specific params for specific fields
   // 
   //  * this.structure[ fieldName ].required -- To skip cast if it's `undefined` and it's NOT required
   //
@@ -367,11 +371,15 @@ var SimpleSchema = declare( null, {
           Object.keys( failedCasts ).forEach( function( fieldName ){
             errors.push( { field: fieldName, message: "Error during casting" } );
           });
-          self._validate( paramObject, function( err, validateErrors ) {
+          self._validate( paramObject, originalObject, castObject, options, function( err, validateErrors ) {
             if( err ){
               cb( err );
             } else {
-              cb( null, paramObject, Array.prototype.concat( errors, validateErrors ) );
+              if( Array.isArray( validateErrors ) ){
+                cb( null, paramObject, Array.prototype.concat( errors, validateErrors ) );
+              } else {
+                cb( null, paramObject, errors );
+              }
             }
           });
         })
@@ -393,14 +401,6 @@ var SimpleSchema = declare( null, {
   },
 
 
-
-  // Clone function available as an object method
-  clone: function( obj ){
-    return SimpleSchema.clone( obj );
-  },
-
-
-
   // The default id maker (just return a random number )
   // available as an object method
   makeId: function( object, cb ){
@@ -409,10 +409,6 @@ var SimpleSchema = declare( null, {
 
 });
 
-
-SimpleSchema.clone = function( obj ){
-  return  JSON.parse( JSON.stringify( obj ) );
-}
 
 SimpleSchema.makeId = function( object, cb ){
   cb( null, Math.floor(Math.random()*10000000) );

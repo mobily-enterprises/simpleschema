@@ -1,55 +1,44 @@
 SimpleSchema
 =============
 
-PLEASE NOTE
-===========
+SimpleSchema is a _simple_ library to validate objects and cast their attributes according to their (schema) types.
 
-The module is going through some _major_ _major_ changes right now. The API is very different, and the way it works is being improved by 1 million times.
-Please come back in a bit to see the amended documentation!
-
-
-
-SimpleSchema is a _simple_ library to cast, and validate, objects.
-It uses [SimpleDeclare - Github](https://github.com/mercmobily/simpleDeclare) in order to define a class. I strongly recommend using SimpleDeclare to create derivative schemas (which are very easy to create).
+It uses [SimpleDeclare - Github](https://github.com/mercmobily/simpleDeclare) in order to define a constructor function (see: 'class'). I strongly recommend using SimpleDeclare to create derivative schemas (which are very easy to create).
 
 SimpleSchema is a required module when you try and use [JsonRestStores - Github](https://github.com/mercmobily/JsonRestStores). SimpleSchema was in fact part of JsonRestStores, and then "taken out" as it's useful in its own right.
 
-Here is how to use it:
+
+# Brief introduction
+
+Here is how to use SimpleSchema:
 
     var Schema = require( 'simpleschema' );
 
     personSchema = new Schema( {
       name: { type: 'string', trim: 20 },
       age:  { type: 'number', default: 30, max: 140 },
-      rank: { type: 'number', default: 99, max: 99 },
+      rank: { type: 'number', default: 99, max: 99, doNotSave: true },
     },
     {
 
       // Validation function called by schema.validate() for async validation
-      validator: function( object, schema, errors, cb ){
+      validator: function( object, originalObject, castObject, options, done ){
 
-        if( doc.name == 'meh' ){
-           errors.push( { field: 'name', message: 'Name mismatch!' } );
+        if( object.name == 'Tony' ){
+           errors.push( { field: 'name', message: 'Tony is not an acceptable name' } );
         }
-        cb( null);
+        done( null);
     });
 
+
+In a normal node/Express application, you would simply use the `validate()` method of personSchema against `req.body`:
 
     // Definition of a standard callback
 
     formSubmit( req, res, next ){
 
-      var errors = [];
-
-      // Make a copy of req.body, as castAndParams _will_ change body. If you are not
-      // bothered by changing `req.body`, you can just pass `req.body` to `castAndParams()`
-      var body = Schema.clone( req.body );
-
-      // Do schema and callback functon checks. They will both add to `errors`
-      personSchema.castAndParams( body, errors );
-
-      // Apply async, record-wise validation which will also enrich the `errors` variable
-      personSchema.validate( obj,  errors, function( err ){
+      // Apply async, record-wise validation to req.body
+      personSchema.validate( req.body, {}, function( err, newBody, errors ){
 
         if( err ){
           next( err );
@@ -61,64 +50,217 @@ Here is how to use it:
           } else {
             // ...
 
-            // use the body.rank attribute...
+            // The newBody.rank and newBody.age attributes are now proper Javascript numbers
 
-            // Get the object ready to be written on the database. The field
-            // `rank` is not to be part of the DB
-            // Cleanup will delete, from `body`, all fields with `doNotSave` defined in the schema
-            personSchema.cleanup( body, 'doNotSave' );
+            // Imagine that the field `rank` is not to be part of the DB.
+            // `personSchema.cleanup()` will delete from `newBody` all fields with `doNotSave` defined in the schema
+            personSchema.cleanup( newBody, 'doNotSave' );
 
-            // Write `body` to the database
+            // Write `newBody` to the database
             // ...
           }
         }
       })
 
-This ensures that all values are cast appropriately (everything in `req.body` is a string). It's easy to change requirements, and (more importantly) make sure that only the right parameters were passed.
+This ensures that all values are cast appropriately (everything in `req.body` comes as a string, whereas you will want `age` and `rank` as proper Javascript numbers).
 
-NOTE: It's not possible to implement an async function that performs per-field validation, because `castAndParams()` itself is syncronous. While it would be _technically_ possible to turn `castAndParams()` into an asyncronous function, this would be an overkill since most of them are there for trimmimg and general field fixing.
+Note that in this field:
 
-## The schema description
+      rank: { type: 'number', default: 99, max: 99, doNotSave: true },
 
-Here is a schema which covers _every_ single possibility in terms of types and parameters (parameters will not be repeated):
+* `type` is the field type. It means that when running personSchema.validate(), `rank` will be cast as a number
+* `default`, `max`, `doNotSave` are the 'field parameters'.
+
+
+## The schema description: all features
+
+Here is a schema which covers _every_ single feature in terms of types and parameters (parameters will not be repeated):
 
     // If there is an error, the validator function will need to return a string describing it.
     // otherwise, return nothing.
-    validatorFunc =  function( obj, value, fieldName, schema ){
-      if( value == 'bad' ) return 'error';
+    var fieldValidatorFunc =  function( obj, value, fieldName, schema ){
+      if( value == 0 ) return 'Age cannot be 0';
       return;
     };
 
-    schema = new Schema( {
-      name:    { type: 'string', default: 'something', uppercase: true, trim: 30, required: true, notEmpty: true },
+    complexSchema = new Schema({
+      name:    { type: 'string', default: 'SOMETHING', uppercase: true, trim: 30, required: true, notEmpty: true },
       surname: { type: 'string', lowercase: true },
-      data:    { type: 'string', serialize: true },
-      age:     { type: 'number', default: 15, min: 10, max: 20, validator: validatorFunc },
+      age:     { type: 'number', default: 15, min: 10, max: 40, validator: fieldValidatorFunc },
       id:      { type: 'id' },
       date:    { type: 'date' },
-      list:    { type: array },
+      list:    { type: 'array' },
+    },
+    {
+      // Validation function called by schema.validate() for async validation
+      validator: function( object, originalObject, castObject, options, done ){
+        var errors = [];
+
+        if( object.name == 'Tony' ){
+           errors.push( { field: 'name', message: 'Tony is not an acceptable name' } );
+        }
+        done( null, errors );
+      }
     });
 
 Note:
 
- * Casting always happens first; note: you can pass the option `skipCast: [ 'one', 'two' ]` to `castAndParams()` if you want to skip casting for those fields
- * If casting fails, the parameters for that field will not be applied (and `errors` will have the casting error)
- * The order matters. Parameters are processed in the order they are encountered. If you have `{ default: 'something', uppercase: true }`, the result will be `Something`.
+ * Casting to the field's type (depending on `type`) always happens first; parameters are applied afterwards
+ * If casting fails, the parameters for that field will not be applied (and `errors` will have the casting error on that field)
+ * The order of parameters matters. Parameters are processed in the order they are encountered. If you have `{ default: 'something', uppercase: true }`, the result will be `Something`.
  * `min`, `max` on `string`s will check the string length; on `number`s will check number value
- * `uppercase`, `lowercase`, `trim` only apply to `string`s
- * `required` will fail if the  object's corresponding attribute (before casting) was `undefined` and will never fail for arrays; note: you can pass the option `notRequired: [ 'one', 'two' ]` to `castAndParams()` if you want to override the field-level `required` option.
+ * `uppercase`, `lowercase`, `trim` will only apply to `string`s
+ * `required` will fail if the  object's corresponding attribute (before casting) was `undefined` and will never fail for arrays;
  * `notEmpty` will fail if the  object's corresponding attribute was `v == ''` (note the weak `==`) and will never fail for arrays
- * If `validatorFunc` returns a string, then an error will be added for that field
+ * If `fieldValidatorFunc` returns a string, then an error will be added for that field. Note that this function is synchronous
+ * The `validator()` function is applied at object level and is asynchronous.
 
 
-## What castAndParams() does
+# Validating against a schema
 
-The `castAndParams()` function takes as parameters 1) The object to manipulate 2) An array which will be populated with errors if necessary 3) An `options` object.
+Validation happens with the `schema.validate()` function:
+
+    complexSchema.validate( object, {}, function( err, validatedObject, errorsArray ){
+
+The `validate()` function takes the following parameters:
+
+ * The object to validate
+ * An optional `options` object with extra options
+ * A callback, called with `validatedObject` (the new object with validation applied) and `errors` (an array with the list of errors triggered during validation)
+
+Here is an example of basic usage:
+
+    p = {
+      name: 'TOny',
+      surname: 'MOBILY',
+      age: '37',
+      id: 3424234424,
+      date: '2013-10-10',
+      list: [ 'one', 'two', 'three' ]
+    }
+
+    complexSchema.validate( p, function( err, newP, errors ){
+      // ...
+    });
+
+`newP` will be:
+
+    { name: 'TONY',
+      surname: 'mobily',
+      age: 37,
+      id: 3424234424,
+      date: Thu Oct 10 2013 08:00:00 GMT+0800 (WST),
+      list: [ 'one', 'two', 'three' ] },
+      nickname: 'some'
+    }
+
+And `errors` will be empty. Note that `age` is now a proper Javascript number, `name` is uppercase and `surname` is lowercase. Note also that `nickname` is 'some' (that is, `SOMETHING` in lower case and trimmed to 4 characters).
+
+## The return `errors` array
+
+TODO NEXT
+
+
+## The `options` object
+
+The second parameter of `schema.validate()` is an (optional) options object. Possible values are:
+
+### `onlyObjectValues`
+
+This option allows you to apply `schema.validate()` only to the fields that are actually defined in the object, regardless of what was required and what wasn't. This allows you to run `schema.validate()` against partial objects. For example:
+
+    p = {
+      nickname: 'MERCMOBILY',
+    }
+
+    complexSchema.validate( p, { onlyObjectValues: true }, function( err, newP, errors ){
+      // ...
+    });
+
+
+`newP` will be:
+
+    { nickname: 'MERC' }
+
+Note that only what "was there" was processed (it was cast and had parameters assigned).
+
+
+### `skipCast`
+
+
+The option `skipCast` is used when you want to skip casting for specific fields.
+
+    p = {
+      name: 'TOny',
+      surname: 'MOBILY',
+      age: '37',
+      id: 3424234424,
+      date: '2013-10-10',
+      list: [ 'one', 'two', 'three' ]
+    }
+
+    complexSchema.validate( p, { skipCast: 'age' }, function( err, newP, errors ){
+      // ...
+    });
+
+`newP` will be (note that '37' is still a string):
+
+   { name: 'TONY',
+      surname: 'mobily',
+      age: '37',
+      id: 3424234424,
+      date: Thu Oct 10 2013 08:00:00 GMT+0800 (WST),
+      list: [ 'one', 'two', 'three' ] },
+      nickname: 'some'
+    }
+
+
+### `skipParams`
+
+The option `skipParams` is used when you want to decide which parameters you want to skip for which fields.
+
+    p = {
+      name: 'TOny',
+      surname: 'MOBILY',
+      age: '37',
+      id: 3424234424,
+      date: '2013-10-10',
+      list: [ 'one', 'two', 'three' ]
+    }
+
+    complexSchema.validate( p, { skipParams: { nickname: [ 'lowercase', 'trim' ] } }, function( err, newP, errors ){
+      // ...
+    });
+
+`newP` will be (note that 'SOMETHING' is still capital letters, and it's not trimmed):
+
+    { name: 'TONY',
+      surname: 'mobily',
+      age: 37,
+      id: 3424234424,
+      date: Thu Oct 10 2013 08:00:00 GMT+0800 (WST),
+      list: [ 'one', 'two', 'three' ] },
+      nickname: 'SOMETHING'
+    }
+
+## The 'required' parameter is special
+
+All field types and parameters are completely equal as far as `validate()` is concerned -- except one: `required`.
+
+The `required` parameter is special in two ways:
+
+1) `validate()` won't attempt to cast an object value if it's `undefined` and `requred` is `false`. If `required` weren't special, casting (and therefore validation as a whole) would (erroneously) fail for values that are both optional and missing.
+
+2) If you want to safely skip `required` as a parameter, you will also need to turn off casting for that field. If you don't, then casting will likely fail (as it will try to cast from `undefined`). If for example you wanted to make `id` optional rather than required, you would run validate this way:
+
+    complexSchema.validate( p, { skipCast: 'id', skipParams: { id: [ 'required' ] } }, function( err, newP, errors ){
+
+
+
+## (Per-field) sync and (object-wide) async validation
+
+TODO NEXT
     
-The function first of all takes the passed object and casts its values to the right type for the schema. This means that `"10"` (the string) will become `10` (the number) if the type is "number".
-
-It then applies all parameters passed in order (the "check" phase).
-
 The `errors` array variable will be populated in case of problems. So, your code should check if the passed variable has grown after the `castAndParams()`. The `errors` varialbe will be an array of objects, in the format:
 
     [
@@ -126,30 +268,17 @@ The `errors` array variable will be populated in case of problems. So, your code
       { field: 'nameOfAnotherField', message: 'Message to the user for this other field', mustChange: false },
     ]
 
-### Parameters passed to `castAndParams()`
-
-
-`castAndParams()` accepts an `options` object where the following keys are considered:
-
-  * `onlyObjectValues` The `required` parameter won't apply, and casting won't happen, for fields that are not defined in the object. This is useful when casting partial objects (objects where some fields are missing, but the fields that _are_ there should be cast)
-  * `skipcast` A list of keys for which casting won't happen. Normally used with `notRequired`
-  * `notRequired` A list of keys for which the `required` parameter won't apply. Normally used with `skipCast`
-
-For example, you might want to `castAndParams()` a new record, which doesn't yet have an ID yet (but with some exceptions. In this case you would write:
-
-    // Do schema cast and check for a new record
-    self.schema.castAndParams(  body, errors, { notRequired: [ '_id' ], skipCast: [ '_id' ]  } );
-
-The option `skipCast` will ensure that no casting will be applied to the field; the option `notRequired` will ensure that no error is thrown if that field is missing altogether.
-
 
 #### For the curious minds
 
-`castAndParams()` actually works in two phases:
+`validate()` actually works in two phases:
 
-  * It casts values using the `_cast()` function. `_cast()` will take into account the options `onlyObjectValues` (which will make `_cast()` only work on fields that actually already exist in the object to be cast) and `skipCast` (an array of fields for which casting will be skipped). Casting is actually delegated to _casting function_; however, those function will _not_ have access to the `option` object.
+  * Runs `_cast()` to cast object values to the right type. Casting is actually delegated to _casting functions_ (for example, `booleanTypeCast()` for the type `boolean`). `_cast()` will take into account the options `onlyObjectValues` (which will make `_cast()` only work on fields that actually already exist in the object to be cast, allowing you to cast partial objects) and `skipCast` (an array of fields for which casting will be skipped).
 
-  * It applies schema parameters to the corresponding object fields using `_params()`. Unlike `_cast()`, `_params()` doesn't actually do anything with the `options` object. It simply delegates all functionalities to the _schema params functions_. The only stock function that uses `options` is `requiredTypeParam` which looks for: `onlyObjectValues` (the `required` parameter won't apply to fields that do not exist in the object) and the `notRequired` array (the `required` parameter will be ignored for the fields in the array). 
+  * Runs `_params()` to apply schema parameters to the corresponding object fields. Just like `_cast()`, this function simply delegates all functionalities to the _schema params functions_ (for example, `uppercaseTypeParam()`). `_params()` will take into account of the option `skipParams`, which allows you to decide what parameters should _not_ be applied to specific fields.
+
+
+
 
 ## Extending a schema
 
@@ -181,7 +310,7 @@ Everything happens in two phases: casting (using the internal function `_cast()`
 
 ### Types
 
-Types are defined by casting functions. When `castAndParams()` encounters:
+Types are defined by casting functions. When `validate()` encounters:
 
     surname: { type: 'string', lowercase: true },
 
@@ -205,7 +334,7 @@ It looks into the schema for a function called `stringTypeCast`. It finds it, so
 Note that the casting function must:
 
 * EITHER return the cast value
-* OR return nothing, and add an entry to the fieldCasts hash
+* OR return nothing, and add an entry to the failedCasts hash
 
 ### Parameters
 
@@ -223,7 +352,7 @@ it will look for `this.lowercaseTypeParam()`, which is:
 Note that the checking function must:
 
 * EITHER return the new value (which will replace the old one)
-* OR replace nothing (the original value won't be changed)
+* OR return nothing (the original value won't be changed)
 
 The `p` parameter is a hash with the following values:
 
@@ -236,6 +365,8 @@ The `p` parameter is a hash with the following values:
  *  `schema`: The full schema,
  *  `errors`: The array that will be "augmented" with errors if necessary
  *  `options`: Options passed to the `castAndParams()` (or `_params`) function
+
+
 
 
 # API description
@@ -264,22 +395,6 @@ Parameters:
   * `fieldName` The field name
   * `failedCasts` An object which can be enriched if necessary. Each key is the `fieldName` of a failed cast 
 
-## `_cast()`
-
-The function actually responsible for casting, delegating it to the correct casting function. For example, if the schema has `field1: { type: 'xxx' }` and the object to be cast has `{ field1: 10 }`, `_cast()` will call `xxxTypeCast()` for that field.
-
-Parameters:
-
-  * `object` The object to cast
-  * `options` An optional options object.
-    * `onlyObjectValues` -- If true, only values already defined in the object will be case. If false, every field defined in the schema structure will be cast even if not present in the object in the first place
-    * `skipCast` -- An array of fields for which casting will be skipped
-
-Returns:
-  * `failedCasts` An object which can be enriched if necessary. Each key is the fieldName of a failed cast 
-
-NOTE: `options` is not passed to the xxxTypeCast function. Here, `options` solely defines how `_cast()` works. ALSO, note that if  `definition.required` is `false` and the object value is `undefined`, casting won't happen.
-
 # `xxxTypeParam()`
 
 Helper function to define possible parameters (other than "type"). Note that a parameter can apply to _any_ type -- it's up to the parameter helper function to decide what to do.
@@ -290,22 +405,7 @@ Parameters:
 
 NOTE: `options` key is what was passed to `_params()` or `castAndParams()`.
 
-## `_params()`
-
-The function that applies schema parameters to object fields, using the right param function. For example, if the schema has `field1: { type: 'number', xxx:10 }` and the object to be cast has `{ field1: 10 }`, `_param()` will call `xxxTypeParam()` for that field.
-
-Parameters:
-
-  * `object` The object to check/apply parameters to
-  * `objectBeforeCast` The object as it was _before_ casting. This is important as some checks will need to be performed to the object before casting actually happened
-  * `errors` An array of error objects with fields  `field`, `message` and `mustChange`
-  * `options` Options that will be passed to the `xxxTypeParam()` function
-  * `failedCasts` Every key is the fieldName of a failed cast. It comes from the `_cast()` function
-
-NOTE: This function doesn't actively use `options` itself. Instead, it passed it to the `xxxTypeParam()` function. The only stock function that uses `options` is `requiredTypeParam` which looks for: `onlyObjectValues` and `notRequired`. However, other non-core functions might use these, or other, parameters.
-
-
-## `_castAndParams()`
+## `validate()`
 
 Applies schema casting and parameters to the passed object. To do that, it will use `_cast()` and then `_params()`. `_cast()` returns a list of failed casts, which are then passed to `_params()`.
 
@@ -325,25 +425,6 @@ Parameters:
   * `parameterName` The name of the parameter that will be hunted down. Any field that in the schema structure has thar parameter fill be deleted from `object`
  
 
-## `validate()`
-
-Calls the async `validator()` defined when constructing the schema object.
-
-Parameters:
-
-  * `object` The object to async validate
-  * `errors` An array of error objects with fields  `field`, `message` and `mustChange`
-  * `cb` The callback, called once the schema's `validation()` function has been called
-
-
-## `clone()`
-
-Simple helper function to clone an object
-
-Parameters:
-
-  * `object` The object to clone
-
 ## `makeId()`
 
 Function that returns a generated unique ID. It could be `ObjectId()` (mongoDB) or a new SEQUENCE number (MariaDB). Specific drivers will tend to rewrite this function.
@@ -358,7 +439,7 @@ NOTE: the `makeId()` function is likely to be overridden by driver-specific ones
 
 ## "Class" (or "constructor function") functions
 
-The "Class" itself has the methods `clone()` and `makeId()` available. They are useful as "Class" functions as they might get used by an application while _creating_ an object.
+The "Class" itself has the method `makeId()` available. They are useful as "Class" functions as they might get used by an application while _creating_ an object.
 
 
 # Driver-specific Mixins
