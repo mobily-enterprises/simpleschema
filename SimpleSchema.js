@@ -157,11 +157,11 @@ var SimpleSchema = declare( null, {
 
   },
 
-  validateTypeParam: function( p ){
+  validatorTypeParam: function( p ){
     if( typeof( p.parameterValue ) !== 'function' )
       throw( new Error("Validator function needs to be a function, found: " + typeof( p.parameterValue ) ) );
 
-    var r = p.parameterValue.call( p.object, p.object[ p.fieldName ], p.fieldName, p.schema );
+    var r = p.parameterValue.call( this, p.object, p.object[ p.fieldName ], p.fieldName );
     if( typeof( r ) === 'string' ) p.errors.push( { field: p.fieldName, message: r } );
   },
 
@@ -335,7 +335,7 @@ var SimpleSchema = declare( null, {
   _validate: function( finalObject, originalObject, castObject, options, cb ){
 
     if( typeof( this.options ) === 'object'  && typeof( this.options.validator) === 'function' ){
-      this.options.validator( finalObject, originalObject, castObject, options, cb );
+      this.options.validator.call( this, finalObject, originalObject, castObject, options, cb );
     } else {
       cb( null, [] );
     }
@@ -361,6 +361,8 @@ var SimpleSchema = declare( null, {
       cb = options;
       options = {}
     }
+
+    options = typeof( options ) === 'undefined' ? {} : options;
 
     self._cast( originalObject, options, function( err, castObject, failedCasts ){
       if( err ){
