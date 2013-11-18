@@ -71,14 +71,13 @@ Note that in this field:
 * `type` is the field type. It means that when running personSchema.validate(), `rank` will be cast as a number
 * `default`, `max`, `doNotSave` are the 'field parameters'.
 
-
 ## The schema description: all features
 
 Here is a schema which covers _every_ single feature in terms of types and parameters (parameters will not be repeated):
 
     // If there is an error, the validator function will need to return a string describing it.
     // otherwise, return nothing.
-    var fieldValidatorFunc =  function( obj, value, fieldName, schema ){
+    var fieldValidatorFunc =  function( obj, value, fieldName ){
       if( value == 0 ) return 'Age cannot be 0';
       return;
     };
@@ -158,8 +157,14 @@ And `errors` will be empty. Note that `age` is now a proper Javascript number, `
 
 ## The return `errors` array
 
-TODO NEXT
+The `errors` variable is an array of objects; each element contains `field` (the field that had the error) and `message` (the error message for that field). For example:
 
+    [
+      { field: 'age', message: 'Age cannot be 0' },
+      { field: 'name', message: 'Name not valid' }
+    ]
+
+A field can potentially have more than one error message attached to it.
 
 ## The `options` object
 
@@ -256,18 +261,94 @@ The `required` parameter is special in two ways:
     complexSchema.validate( p, { skipCast: 'id', skipParams: { id: [ 'required' ] } }, function( err, newP, errors ){
 
 
-
 ## (Per-field) sync and (object-wide) async validation
 
-TODO NEXT
-    
-The `errors` array variable will be populated in case of problems. So, your code should check if the passed variable has grown after the `castAndParams()`. The `errors` varialbe will be an array of objects, in the format:
+You can use functions to validate data. There are two cases:
 
-    [
-      { field: 'nameOfFieldsWithProblems', message: 'Message to the user for this field', mustChange: true },
-      { field: 'nameOfAnotherField', message: 'Message to the user for this other field', mustChange: false },
-    ]
+### Per field, sync validation
 
+In the schema, you can define a field as follows:
+
+    age:  { type: 'number', default: 15, min: 10, max: 40, validator: fieldValidatorFunc },
+
+Where `fieldValidatorFunc` is:
+
+    var fieldValidatorFunc =  function( obj, value, fieldName ){
+      if( value == 0 ) return 'Age cannot be 0';
+      return;
+    };
+
+In `fieldValidatorFunc`, the `this` variable is the schema object. If the function returns a string, that will be the error. If it returns nothing, then validation went through.
+
+Note that this validation is synchronous. It's meant to be used to check field sanity.
+
+### Object-wide, async  validation
+
+The second parameter of the construction object is a hash. If the `validator` key is set, that function will be used for validation. One bonus of this function is that it's asynchronous. This function is there in cases where you need more complex, asynchronous validation that relies on running asynchronous functions.
+
+For example:
+
+    complexSchema = new Schema({
+      name:    { type: 'string', lowercase: true, trim: 30, required: true, notEmpty: true },
+      surname: { type: 'string', uppercase: true, trim: 50, required: true, notEmpty: true },
+    },
+    {
+      validator: function( object, originalObject, castObject, options, done ){
+        var errors = [];
+
+        db.collection.bannedNames.find( { name: object.name }, function( err, docs ){
+          if( err ){
+            done( err );
+          } else {
+            if( docs.length ){
+              errors.push( { field: 'name', message: 'Name not valid or not allowed' } );
+            }
+            done( null, errors );
+          }
+        });
+
+      }
+    });
+
+Note that you have several versions of the object: `object` is the object once all casting and all parameters are applied to it; `originalObject` is the one passed originally to `validate()`; `castObject` is the object with only casting applied to it. 
+
+You also have access to the `options` passed when you did run `validate()`. For example, you could do:
+
+    asyncValidatedSchema = new Schema({
+      name:    { type: 'string', lowercase: true, trim: 30, required: true, notEmpty: true },
+      surname: { type: 'string', uppercase: true, trim: 50, required: true, notEmpty: true },
+    },
+    {
+      validator: function( object, originalObject, castObject, options, done ){
+        var errors = [];
+
+        // Check options, skip check if `skipDbCheck` was passed
+        if( options.skipDbCheck ){ return done( null, [] ) }
+
+        db.collection.bannedNames.find( { name: object.name }, function( err, docs ){
+          if( err ){
+            done( err );
+          } else {
+            if( docs.length ){
+              errors.push( { field: 'name', message: 'Name not valid or not allowed' } );
+            }
+            done( null, errors );
+          }
+        });
+
+      }
+    });
+
+    var p = { name: 'Tony', surname: 'Mobily' };
+
+    asyncValidatedSchema.validate( p, { skipDbCheck: true }, function( err, newP, errors ){
+      if( err ){
+        console.log('Callback failed:");
+        console.log( err );
+      } else {
+        console.log("Validation errors:");
+        console.log( errors );
+    });
 
 #### For the curious minds
 
@@ -276,8 +357,6 @@ The `errors` array variable will be populated in case of problems. So, your code
   * Runs `_cast()` to cast object values to the right type. Casting is actually delegated to _casting functions_ (for example, `booleanTypeCast()` for the type `boolean`). `_cast()` will take into account the options `onlyObjectValues` (which will make `_cast()` only work on fields that actually already exist in the object to be cast, allowing you to cast partial objects) and `skipCast` (an array of fields for which casting will be skipped).
 
   * Runs `_params()` to apply schema parameters to the corresponding object fields. Just like `_cast()`, this function simply delegates all functionalities to the _schema params functions_ (for example, `uppercaseTypeParam()`). `_params()` will take into account of the option `skipParams`, which allows you to decide what parameters should _not_ be applied to specific fields.
-
-
 
 
 ## Extending a schema
