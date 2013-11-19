@@ -7,6 +7,17 @@ It uses [SimpleDeclare - Github](https://github.com/mercmobily/simpleDeclare) in
 
 SimpleSchema is a required module when you try and use [JsonRestStores - Github](https://github.com/mercmobily/JsonRestStores). SimpleSchema was in fact part of JsonRestStores, and then "taken out" as it's useful in its own right.
 
+Main features:
+
+* It's easy to use
+* It's easy to extend
+* It's tailored for `req.body`: no complex schema-in-schema, etc.
+* Allows sync an async validation
+* It provides DB-specific layers to handle IDs
+* It's actively used in a complex project,  [JsonRestStores](https://github.com/mercmobily/JsonRestStores)
+* It down-to-earth code: no trickery and complex object structures
+* Aimed at casting/checking of web forms 
+* Fully unit-tested
 
 # Brief introduction
 
@@ -18,18 +29,7 @@ Here is how to use SimpleSchema:
       name: { type: 'string', trim: 20 },
       age:  { type: 'number', default: 30, max: 140 },
       rank: { type: 'number', default: 99, max: 99, doNotSave: true },
-    },
-    {
-
-      // Validation function called by schema.validate() for async validation
-      validator: function( object, originalObject, castObject, options, done ){
-
-        if( object.name == 'Tony' ){
-           errors.push( { field: 'name', message: 'Tony is not an acceptable name' } );
-        }
-        done( null);
     });
-
 
 In a normal node/Express application, you would simply use the `validate()` method of personSchema against `req.body`:
 
