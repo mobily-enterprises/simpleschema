@@ -69,7 +69,7 @@ Note that in this field:
       rank: { type: 'number', default: 99, max: 99, doNotSave: true },
 
 * `type` is the field type. It means that when running personSchema.validate(), `rank` will be cast as a number
-* `default`, `max`, `doNotSave` are the 'field parameters'.
+* `default`, `max`, `doNotSave` are the "field parameters".
 
 ## The schema description: all features
 
@@ -153,7 +153,7 @@ Here is an example of basic usage:
       nickname: 'some'
     }
 
-And `errors` will be empty. Note that `age` is now a proper Javascript number, `name` is uppercase and `surname` is lowercase. Note also that `nickname` is 'some' (that is, `SOMETHING` in lower case and trimmed to 4 characters).
+And `errors` will be empty. Note that `age` is now a proper Javascript number, `name` is uppercase and `surname` is lowercase. Note also that `nickname` is `some` (that is, `SOMETHING` in lower case and trimmed to 4 characters).
 
 ## The return `errors` array
 
@@ -210,7 +210,7 @@ The option `skipCast` is used when you want to skip casting for specific fields.
 
 `newP` will be (note that '37' is still a string):
 
-   { name: 'TONY',
+    { name: 'TONY',
       surname: 'mobily',
       age: '37',
       id: 3424234424,
@@ -256,10 +256,11 @@ The `required` parameter is special in two ways:
 
 1) `validate()` won't attempt to cast an object value if it's `undefined` and `requred` is `false`. If `required` weren't special, casting (and therefore validation as a whole) would (erroneously) fail for values that are both optional and missing.
 
-2) If you want to safely skip `required` as a parameter, you will also need to turn off casting for that field. If you don't, then casting will likely fail (as it will try to cast from `undefined`). If for example you wanted to make `id` optional rather than required, you would run validate this way:
+2) If you want to safely skip `required` as a parameter, you will also need to turn off casting for that field. If you don't, then casting will possibly fail (as it will try to cast from `undefined`, with possibly strange results). If for example you wanted to make `id` optional rather than required, you would run validate this way:
 
     complexSchema.validate( p, { skipCast: 'id', skipParams: { id: [ 'required' ] } }, function( err, newP, errors ){
 
+3) If the `required` constraint is not met, then other parameters (`max`, `default`, etc.) will not be applied
 
 ## (Per-field) sync and (object-wide) async validation
 
@@ -356,12 +357,13 @@ You also have access to the `options` passed when you did run `validate()`. For 
 
   * Runs `_cast()` to cast object values to the right type. Casting is actually delegated to _casting functions_ (for example, `booleanTypeCast()` for the type `boolean`). `_cast()` will take into account the options `onlyObjectValues` (which will make `_cast()` only work on fields that actually already exist in the object to be cast, allowing you to cast partial objects) and `skipCast` (an array of fields for which casting will be skipped).
 
-  * Runs `_params()` to apply schema parameters to the corresponding object fields. Just like `_cast()`, this function simply delegates all functionalities to the _schema params functions_ (for example, `uppercaseTypeParam()`). `_params()` will take into account of the option `skipParams`, which allows you to decide what parameters should _not_ be applied to specific fields.
-
+  * Runs `_params()` to apply schema parameters to the corresponding object fields. Just like `_cast()`, this function simply delegates all functionalities to the _schema params functions_ (for example, `uppercaseTypeParam()`). `_params()` will take into account of the options `onlyObjectValues` (applying parameters only to fields that already exist in the object) and `skipParams`, which allows you to decide what parameters should _not_ be applied to specific fields.
 
 ## Extending a schema
 
 The basic schema is there to be extended. It's very easy to define new types (casting) and new parameters (field manipulation): all you need to do is create a new constructor that inherits from Schema, and add appropriately named methods.
+
+The easiest way to extend a schema is by using [SimpleDeclare - Github](https://github.com/mercmobily/simpleDeclare).
 
 For example:
 
@@ -370,14 +372,12 @@ For example:
 
       incrementByTypeParam: function( p ){
         if( typeof( p.value ) !== 'number' ) return; // Only works with numbers
-        return p.value = p.value + p.definitionValue;
+        return p.value = p.value + p.parameterValue;
       }, 
 
       booleanTypeCast: function( definition, value, fieldName, failedCasts ){
-        if( value ) return 1;
-        return 0;
+        return !!value;
       },
-
     });
 
 Now in your schema you can have entries like:
@@ -385,9 +385,26 @@ Now in your schema you can have entries like:
     age:     { type: 'number', incrementBy: 10 },
     enabled: { type: 'boolean' },
 
-Everything happens in two phases: casting (using the internal function `_cast()`) and manipulation (using `_params()`).
+You can also create new schema without using SimpleDeclare, but the good old nodejs way:
 
-### Types
+    var Schema = require( 'simpleschema' );
+
+    function NewSchema( structure, options ){
+      Schema.apply( this, arguments );
+    }
+    require('util').inherits( NewSchema, Schema );
+
+    NewSchema.prototype.incrementByTypeParam = function( p ){
+      if( typeof( p.value ) !== 'number' ) return; // Only works with numbers
+      return p.value = p.value + p.parameterValue;
+    }
+    NewSchema.prototype.booleanTypeCast = function( definition, value, fieldName, failedCasts ){
+      return !!value;
+    }
+
+I cannot really write this code without a cringing feeling in my stomach. But, it's up to you.
+
+### Extending types
 
 Types are defined by casting functions. When `validate()` encounters:
 
@@ -395,7 +412,7 @@ Types are defined by casting functions. When `validate()` encounters:
 
 It looks into the schema for a function called `stringTypeCast`. It finds it, so it runs:
 
-    stringTypeCast: function( definition, value, fieldName, failedCasts ){
+    stringTypeCast: function( definition, value, fieldName, options, failedCasts ){
 
       // Undefined: return '';
       if( typeof( value ) === 'undefined' ) return '';
@@ -415,7 +432,15 @@ Note that the casting function must:
 * EITHER return the cast value
 * OR return nothing, and add an entry to the failedCasts hash
 
-### Parameters
+The parameters passed to the function are:
+
+* `definition`. The full definition for that field. For example, `{ type: 'string', lowercase: true }`
+* `value`. The value of the record for that field
+* `fieldName`. The field's name
+*  `options`: Options passed to the `validate()` function
+* `failedCasts`. A hash variable, that needs to be "enriched" if a cast fails (see above)
+
+### Extending parameters
 
 Parameters are based on the same principle. So, when `castAndParams()` encounters:
  
@@ -435,18 +460,17 @@ Note that the checking function must:
 
 The `p` parameter is a hash with the following values:
 
- *  `value`: The value of that field for the passed object
- *  `object`: The full passed object
- *  `objectBeforeCast: The full "before-cast" passed object
- *  `fieldName: The make of the field
+ *  `value`: The value of that field for the passed object. Note that parameters are applied sequentially. So, if you have a field defined as `{ type: 'string', trim: 10, uppercase: true }`, by the time `uppercase` is applied, `value` will already be trimmed.
+ *  `valueBeforeParams`: The value of that field before _any_ parameters were applied
+ *  `object`: The full passed object. The same concept of parameters applied sequentially applies.
+ *  `objectBeforeCast`: The full object before casting was applied
+ *  `objectBeforeParams`: The full object before _any_ params were applied.
+ *  `fieldName`: The field's name
  *  `definition`: The full definition for that schema field (`{ type: 'number', incrementBy: 10 }`)
- *  `definitionValue`: The value for this particular parameter in the definition
- *  `schema`: The full schema,
- *  `errors`: The array that will be "augmented" with errors if necessary
- *  `options`: Options passed to the `castAndParams()` (or `_params`) function
-
-
-
+ *  `parameter`: The name of this particular parameter in the definition. For example, for `{ default: 'some', max: 10 }` while processing `max`, `parameter` will be `10`.
+ *  `parameterValue`: The value for this particular parameter in the definition (for example, for `max` it would be `10`).
+ *  `errors`: The errors array that will be "augmented" with errors if necessary (new errors will need to be `push()`ed
+ *  `options`: Options passed to the `validate()` function
 
 # API description
 
@@ -463,36 +487,23 @@ Parameters:
     * `validator` -- The validator function
     * (that's it for now)
 
-## `xxxTypeCast()`
+## `xxxTypeCast( definition, value, fieldName, options, failedCasts )`
 
 Helper function that will define the type `xxx`. Used when you have, in your schema, something like `field1: { type: 'xxx' }` 
 
-Parameters:
-
-  * `definition` The schema structure. IF `_cast()` was called with option `onlyObjectValues` the object itself
-  * `value` The value of the object field
-  * `fieldName` The field name
-  * `failedCasts` An object which can be enriched if necessary. Each key is the `fieldName` of a failed cast 
-
-# `xxxTypeParam()`
+# `xxxTypeParam( p )`
 
 Helper function to define possible parameters (other than "type"). Note that a parameter can apply to _any_ type -- it's up to the parameter helper function to decide what to do.
 
-Parameters:
+## `validate( object, options, callback)`
 
-  * `p` An associative array that will have the field described in the "parameters" paragraph above
-
-NOTE: `options` key is what was passed to `_params()` or `castAndParams()`.
-
-## `validate()`
-
-Applies schema casting and parameters to the passed object. To do that, it will use `_cast()` and then `_params()`. `_cast()` returns a list of failed casts, which are then passed to `_params()`.
+Applies schema casting and parameters to the passed object.
 
 Parameters:
 
-  * `object` The object to cast and check
-  * `errors` An array of error objects with fields  `field`, `message` and `mustChange`
-  * `options` Options that will be passed to the `_params()` function, whic in turn will pass it to the `xxxTypeParam()` functions
+  * `object`. The object to cast and check
+  * `options`. Options received by all param and casting functions
+  * `callback`. The callback to call once validation is done
 
 ## `cleanup()`
 
@@ -502,7 +513,6 @@ Parameters:
 
   * `object` The object to cleanup
   * `parameterName` The name of the parameter that will be hunted down. Any field that in the schema structure has thar parameter fill be deleted from `object`
- 
 
 ## `makeId()`
 
@@ -515,57 +525,19 @@ Parameters:
 
 NOTE: the `makeId()` function is likely to be overridden by driver-specific ones.
 
-
 ## "Class" (or "constructor function") functions
 
 The "Class" itself has the method `makeId()` available. They are useful as "Class" functions as they might get used by an application while _creating_ an object.
 
-
 # Driver-specific Mixins
 
-Basic schemas work really well for any database. However, it's handy to have driver-specific schemas which take into consideration driver-specific features.
-
-Driver-specific schemas come in the form of `mixins`: they are basic classes that should be "mixed in" with the main one.
-
-For example:
-
-    var Schema = require('simpleschema')
-    var MongoSchemaMixin = require('simpleschema/MongoSchemaMixin.js')
-
-
-    // Mixing in Schema (the basic class) with MongoSchemaMixin
-    MyMongoSchema = declare( [ Schema, MongoSchemaMixin ] );
-
-    person = new MyMongoSchema({
-      // ...
-    });
-
+SimpleSchema comes with pre-defined mixins that allow you to extend the type and parameters available to SimpleSchema.
 
 ## MongoSchemaMixin
 
-The MongoSchemaMixin overloads the following functions:
+MongoSchemaMixin is available from [SimpleSchema-MongoDb](https://github.com/mercmobily/simpleschema-mongodb). When you use MongoSchemaMixin:
 
-  * `idTypeCast()` It will cast a field to Mongo's own `ObjectId` type. If the field is not valid, it will fail (by adding a key to `failedCasts`)
-  * `makeId()` Rather than using the default id creator, which by default just returns a random number, the overloaded `makeId()` will use Mongo's own `ObjectId()` function. NOTE: `makeId()` is available as an object method, _and_ as a class method
-
-
-For example:
-
-    var Schema = require('simpleschema')
-    var MongoSchemaMixin = require('simpleschema/MongoSchemaMixin.js')
+* The type `id` will be a proper MondoDb ObjectId object
+* The object _and_ class function `makeId()` will return a new MongoDb ObjectId object
 
 
-    // Mixing in Schema (the basic class) with MongoSchemaMixin
-    MyMongoSchema = declare( [ Schema, MongoSchemaMixin ] );
-
-    person = new MyMongoSchema({
-      id:   { type: 'id' },                  // This will use Mongo's makeId casting function
-      name: { type: 'string', trim: 20 },
-      age:  { type: 'number', default: 30, max: 140 },
-      rank: { type: 'number', default: 99, max: 99 },
-    });
-
-
-## MariaSchemaMixin
-
-Coming when MySql support is added
