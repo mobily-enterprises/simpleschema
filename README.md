@@ -89,6 +89,7 @@ Here is a schema which covers _every_ single feature in terms of types and param
       id:      { type: 'id' },
       date:    { type: 'date' },
       list:    { type: 'array' },
+      various: { type: 'serialize', required: false },
     },
     {
       // Validation function called by schema.validate() for async validation
@@ -107,6 +108,7 @@ Note:
  * Casting to the field's type (depending on `type`) always happens first; parameters are applied afterwards
  * If casting fails, the parameters for that field will not be applied (and `errors` will have the casting error on that field)
  * The order of parameters matters. Parameters are processed in the order they are encountered. If you have `{ default: 'something', uppercase: true }`, the result will be `Something`.
+ * the `serialize` type will convert an object into a string. You need to use the option `{ deserialize: true }` if you want to do the opposite.
  * `min`, `max` on `string`s will check the string length; on `number`s will check number value
  * `uppercase`, `lowercase`, `trim` will only apply to `string`s
  * `required` will fail if the  object's corresponding attribute (before casting) was `undefined` and will never fail for arrays;
@@ -135,7 +137,8 @@ Here is an example of basic usage:
       age: '37',
       id: 3424234424,
       date: '2013-10-10',
-      list: [ 'one', 'two', 'three' ]
+      list: [ 'one', 'two', 'three' ],
+      serialize: { a: 10, b: 20 }
     }
 
     complexSchema.validate( p, function( err, newP, errors ){
@@ -150,10 +153,69 @@ Here is an example of basic usage:
       id: 3424234424,
       date: Thu Oct 10 2013 08:00:00 GMT+0800 (WST),
       list: [ 'one', 'two', 'three' ] },
-      nickname: 'some'
+      nickname: 'some',
+      data: '{"a":10,"b":20}'
     }
 
 And `errors` will be empty. Note that `age` is now a proper Javascript number, `name` is uppercase and `surname` is lowercase. Note also that `nickname` is `some` (that is, `SOMETHING` in lower case and trimmed to 4 characters).
+
+
+## The unidirectional `serialize` parameter
+
+In some cases, you might want `serialize` to work the other way around: you want to convert a JSON string into an object. This is common if, for example, you want to 1) Receive the data via `req.body` 2) Store the data after `schema.validate()` (any `serialize` field will be serialized) 3) Later on, fetch the data from the database 4) Validate that data against the same schema (in which case, you will use the option `{ deserialize: true }`).
+
+For example:
+
+    var Schema = require( 'simpleschema' );
+    var declare = require( 'simpledeclare' );
+    var MongoSchemaMixin = require('simpleschema-mongo')
+
+   personSchema = new Schema( {
+      name: { type: 'string', trim: 20 },
+      surname: { type: 'string', trim: 20 },
+      data: { type: 'serialize', required: true },
+    });
+
+    p = {
+      name: 'Tony',
+      surname: 'Mobily',
+      data: { a: 10, b: 20 }
+    }
+
+    personSchema.validate( p, function( err, newP, errors ){
+      if( err ) {
+        console.log("Err!");
+        console.log( err );
+      } else {
+
+        // At this point, newP.data is '{"a":10,"b":20}'
+        if( errors.length ){
+          console.log("Validation errors!");
+          console.log( errors );
+        } else {
+
+          console.log("newP:");
+          console.log( newP );
+
+          personSchema.validate( newP, { deserialize: true }, function( err, newerP, errors ){
+            if( err ) {
+              console.log("Err!");
+              console.log( err );
+            } else {
+    
+              // At this point, newP.data is '{"a":10,"b":20}'
+              if( errors.length ){
+                console.log("Validation errors!");
+                console.log( errors );
+              } else {
+                console.log("newerP:");
+                console.log( newerP );
+              }
+            }
+          })
+       }
+      }
+    });
 
 ## The return `errors` array
 
@@ -247,6 +309,11 @@ The option `skipParams` is used when you want to decide which parameters you wan
       list: [ 'one', 'two', 'three' ] },
       nickname: 'SOMETHING'
     }
+
+
+### `deserialize`
+
+This option, if set to `true`, will make `serialize` work the opposite way: data will be converted back to Javascript Objects (see explanation above).
 
 ## The 'required' parameter is special
 
@@ -442,7 +509,7 @@ The parameters passed to the function are:
 
 ### Extending parameters
 
-Parameters are based on the same principle. So, when `castAndParams()` encounters:
+Parameters are based on the same principle. So, when `validate()` encounters:
  
     surname: { type: 'string', lowercase: true },
 
@@ -467,7 +534,7 @@ The `p` parameter is a hash with the following values:
  *  `objectBeforeParams`: The full object before _any_ params were applied.
  *  `fieldName`: The field's name
  *  `definition`: The full definition for that schema field (`{ type: 'number', incrementBy: 10 }`)
- *  `parameter`: The name of this particular parameter in the definition. For example, for `{ default: 'some', max: 10 }` while processing `max`, `parameter` will be `10`.
+ *  `parameterName`: The name of this particular parameter in the definition. For example, for `{ default: 'some', max: 10 }` while processing `max`, `parameter` will be `max`.
  *  `parameterValue`: The value for this particular parameter in the definition (for example, for `max` it would be `10`).
  *  `errors`: The errors array that will be "augmented" with errors if necessary (new errors will need to be `push()`ed
  *  `options`: Options passed to the `validate()` function
