@@ -29,7 +29,7 @@ var SimpleSchema = declare( null, {
 
   // Built-in types
 
-  noneTypeCast: function( definition, value, fieldName, options,failedCasts ){
+  noneTypeCast: function( definition, value, fieldName, options, failedCasts ){
    return value;
   },
 
@@ -49,7 +49,7 @@ var SimpleSchema = declare( null, {
     return value.toString();
   },
 
-  numberTypeCast: function( definition, value,  fieldName, options,failedCasts ){
+  numberTypeCast: function( definition, value,  fieldName, options, failedCasts ){
 
     // Undefined: return 0;
     if( typeof( value ) === 'undefined' ) return 0;
@@ -193,9 +193,8 @@ var SimpleSchema = declare( null, {
 
 
   requiredTypeParam: function( p ){
-
-    if( typeof( p.object[ p.fieldName ]) === 'undefined'  && p.parameterValue ){
-      p.errors.push( { field: p.fieldName, message: 'Field required:' + p.fieldName } );
+    if( typeof( p.objectBeforeCast[ p.fieldName ]) === 'undefined'  && p.parameterValue ){
+      p.errors.push( { field: p.fieldName, message: 'Field required: ' + p.fieldName } );
     }
   },
 
@@ -207,7 +206,7 @@ var SimpleSchema = declare( null, {
   },
 
 
-  // Options and values used: (does NOT pass options to cast functions)
+  // Options and values used:
   //  * options.onlyObjectValues             -- Will apply cast for existing object's keys rather than the schema itself
   //  * options.skipCast                     -- To know what casts need to be skipped
   // 
@@ -215,7 +214,7 @@ var SimpleSchema = declare( null, {
   //
   _cast: function( object, options, cb ){
  
-    var type, failedCasts = {};
+    var type, failedCasts = {}, failedRequired = {};
     var options = typeof( options ) === 'undefined' ? {} : options;
     var targetObject;
     var resultObject = {};
@@ -243,14 +242,21 @@ var SimpleSchema = declare( null, {
         continue;
       }
 
-      // Skip casting if value is undefined AND required is false in schema
+      // Skip casting if value is `undefined` AND it's not required
       if( !definition.required && typeof( object[ fieldName ] ) === 'undefined' ){
+        continue;
+      }
+
+      // Skip casting if value is `undefined` AND it IS required
+      // Also, set failedRequired for that field, so that no param will be applied to it except `required`
+      if( definition.required && typeof( object[ fieldName ] ) === 'undefined' ){
+        failedRequired[ fieldName ] = true;
         continue;
       }
 
       // Run the xxxTypeCast function for a specific type
       if( typeof( this[ definition.type + 'TypeCast' ]) === 'function' ){
-        var result = this[ definition.type + 'TypeCast' ](definition, object[ fieldName ], fieldName, options, failedCasts );
+        var result = this[ definition.type + 'TypeCast' ].call( this, definition, object[ fieldName ], fieldName, options, failedCasts );
         if( typeof( result ) !== 'undefined' ) resultObject[ fieldName ] = result;
 
       } else {
@@ -260,15 +266,15 @@ var SimpleSchema = declare( null, {
     }
 
     // That's it -- return resulting Object
-    cb( null, resultObject, failedCasts ); 
+    cb( null, resultObject, failedCasts, failedRequired ); 
 
   },
 
-  // Options and values used: (It DOES pass options to cast functions)
+  // Options and values used:
   //  * options.onlyObjectValues             -- Will skip appling parameters if undefined and options.onlyObjectValues is true
   //  * options.skipParams          -- Won't apply specific params for specific fields
 
-  _params: function( object, objectBeforeCast, options, failedCasts, cb ){
+  _params: function( object, objectBeforeCast, options, failedCasts, failedRequired, cb ){
   
     var type;
     var options = typeof(options) === 'undefined' ? {} : options;
@@ -308,22 +314,28 @@ var SimpleSchema = declare( null, {
             if( Array.isArray( skipParams ) && skipParams.indexOf( parameter) !== -1  ) continue;
           }
 
-          if( parameter != 'type' ){
-            if( typeof( this[ parameter + 'TypeParam' ]) === 'function' ){
-              var result = this[ parameter + 'TypeParam' ]({
+          if( parameter != 'type' && typeof( this[ parameter + 'TypeParam' ]) === 'function' ){
+
+            // If `required` failed during casting, then `required` is the ONLY
+            // parameter that will actually get called
+            if( !( failedRequired[ fieldName] && parameter !== 'required' ) ){
+
+              var result = this[ parameter + 'TypeParam' ].call( this, {
                 value: resultObject[ fieldName ],
+                valueBeforeParams: object[ fieldName ],
                 object: resultObject,
                 objectBeforeCast: objectBeforeCast,
                 objectBeforeParams: object,
                 fieldName: fieldName,
                 definition: definition,
+                parameter: parameter,
                 parameterValue: definition[ parameter ],
-                schema: this,
                 errors: errors,
                 options: options,
               } );
               if( typeof( result ) !== 'undefined' ) resultObject[ fieldName ] = result;
             }
+
           }   
         }
       }   
@@ -364,11 +376,11 @@ var SimpleSchema = declare( null, {
 
     options = typeof( options ) === 'undefined' ? {} : options;
 
-    self._cast( originalObject, options, function( err, castObject, failedCasts ){
+    self._cast( originalObject, options, function( err, castObject, failedCasts, failedRequired ){
       if( err ){
         cb( err );
       } else {
-        self._params( castObject, originalObject, options, failedCasts, function( err, paramObject, errors ){
+        self._params( castObject, originalObject, options, failedCasts, failedRequired, function( err, paramObject, errors ){
 
           Object.keys( failedCasts ).forEach( function( fieldName ){
             errors.push( { field: fieldName, message: "Error during casting" } );
