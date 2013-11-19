@@ -94,8 +94,15 @@ var SimpleSchema = declare( null, {
 
     var r;
 
+    if( options.deserialize ){
+     
+      if( typeof( value ) !== 'string' ){
+        failedCasts[ fieldName ] = true;
+        return;
+      }
+
     // CASE #1: it's a string. Serialise it
-    if( typeof( value ) === 'string' ){
+    //if( typeof( value ) === 'string' ){
 
       try {
           // Attempt to stringify
@@ -110,6 +117,11 @@ var SimpleSchema = declare( null, {
 
     // CASE #2: it's anything but a string. Serialise it.
     } else {
+
+      if( typeof( value ) !== 'object' ){
+        failedCasts[ fieldName ] = true;
+        return;
+      }
 
       try {
           // Attempt to stringify
@@ -305,22 +317,22 @@ var SimpleSchema = declare( null, {
         definition = this.structure[ fieldName ];
 
          // Run specific functions based on the passed options
-        for( var parameter in definition ){
+        for( var parameterName in definition ){
 
           // If it's to be skipped, we shall skip -- e.g. `options.skipParams == { tabId: 'required' }` to
           // skip `required` parameter for `tabId` field
           if( typeof( options.skipParams ) === 'object' && options.skipParams !== null ){
             var skipParams = options.skipParams[ fieldName ];
-            if( Array.isArray( skipParams ) && skipParams.indexOf( parameter) !== -1  ) continue;
+            if( Array.isArray( skipParams ) && skipParams.indexOf( parameterName) !== -1  ) continue;
           }
 
-          if( parameter != 'type' && typeof( this[ parameter + 'TypeParam' ]) === 'function' ){
+          if( parameterName != 'type' && typeof( this[ parameterName + 'TypeParam' ]) === 'function' ){
 
             // If `required` failed during casting, then `required` is the ONLY
             // parameter that will actually get called
-            if( !( failedRequired[ fieldName] && parameter !== 'required' ) ){
+            if( !( failedRequired[ fieldName] && parameterName !== 'required' ) ){
 
-              var result = this[ parameter + 'TypeParam' ].call( this, {
+              var result = this[ parameterName + 'TypeParam' ].call( this, {
                 value: resultObject[ fieldName ],
                 valueBeforeParams: object[ fieldName ],
                 object: resultObject,
@@ -328,8 +340,8 @@ var SimpleSchema = declare( null, {
                 objectBeforeParams: object,
                 fieldName: fieldName,
                 definition: definition,
-                parameter: parameter,
-                parameterValue: definition[ parameter ],
+                parameterName: parameterName,
+                parameterValue: definition[ parameterName ],
                 errors: errors,
                 options: options,
               } );
