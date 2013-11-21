@@ -332,6 +332,9 @@ var SimpleSchema = declare( null, {
             // parameter that will actually get called
             if( !( failedRequired[ fieldName] && parameterName !== 'required' ) ){
 
+              // Store the length of errors; later, it will use this to check that it hasn't grown
+              var errLength = errors.length;
+
               var result = this[ parameterName + 'TypeParam' ].call( this, {
                 value: resultObject[ fieldName ],
                 valueBeforeParams: object[ fieldName ],
@@ -345,7 +348,11 @@ var SimpleSchema = declare( null, {
                 errors: errors,
                 options: options,
               } );
+
               if( typeof( result ) !== 'undefined' ) resultObject[ fieldName ] = result;
+
+              // If `errors` grew, the following parameters will not be applied
+              if( errors.length != errLength ) break;
             }
 
           }   
