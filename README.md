@@ -266,7 +266,7 @@ The option `skipCast` is used when you want to skip casting for specific fields.
       list: [ 'one', 'two', 'three' ]
     }
 
-    complexSchema.validate( p, { skipCast: 'age' }, function( err, newP, errors ){
+    complexSchema.validate( p, { skipCast: [ 'age' ] }, function( err, newP, errors ){
       // ...
     });
 
