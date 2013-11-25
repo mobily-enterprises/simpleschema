@@ -141,7 +141,12 @@ var SimpleSchema = declare( null, {
   // Cast an ID for this particular engine. If the object is in invalid format, it won't
   // get cast, and as a result check will fail
   idTypeCast: function( definition, value,  fieldName, options, failedCasts ){
-    return value;
+    var n = parseInt( value );
+    if( isNaN( n ) ){
+      failedCasts[ fieldName ] = true;
+    } else {
+      return n;
+    }
   },
 
 
