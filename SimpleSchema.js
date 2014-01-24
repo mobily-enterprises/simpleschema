@@ -95,7 +95,7 @@ var SimpleSchema = declare( null, {
     var r;
 
     if( options.deserialize ){
-     
+
       if( typeof( value ) !== 'string' ){
         failedCasts[ fieldName ] = true;
         return;
@@ -217,7 +217,7 @@ var SimpleSchema = declare( null, {
 
   notEmptyTypeParam: function( p ){
     // if( ! Array.isArray( p.value ) && ( typeof( p.objectBeforeCast[ p.fieldName ]) === 'undefined' || p.objectBeforeCast[ p.fieldName ] == '')) {
-    if( ! Array.isArray( p.value ) &&  p.objectBeforeCast[ p.fieldName ] == '') {
+    if( ! Array.isArray( p.value ) &&  p.objectBeforeCast[ p.fieldName ] == '' && p.parameterValue) {
       p.errors.push( { field: p.fieldName, message: 'Field cannot be empty: ' + p.fieldName } );
     }
   },
@@ -302,6 +302,15 @@ var SimpleSchema = declare( null, {
 
    // First of all, if it's not in the schema, it's not allowed
     for( var k in objectBeforeCast ){
+
+      // I ended up opting against this option
+      //if( Array.isArray( options.alwaysAllow ) && options.alwaysAllow.indexOf( k ) == -1  ){
+      //
+      //  if( typeof( this.structure[ k ] ) === 'undefined' ){
+      //    errors.push( { field: k, message: 'Field not allowed: ' + k } );
+      //  }
+      //}
+
       if( typeof( this.structure[ k ] ) === 'undefined' ){
         errors.push( { field: k, message: 'Field not allowed: ' + k } );
       }
