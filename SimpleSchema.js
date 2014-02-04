@@ -68,7 +68,7 @@ var SimpleSchema = declare( null, {
  
   dateTypeCast:function( definition, value, fieldName, options, failedCasts ){
 
-    // Undefined: return empty date
+    // Undefined: return a new date object
     if( typeof( value ) === 'undefined' ){
       return new Date();
     }
@@ -140,6 +140,32 @@ var SimpleSchema = declare( null, {
 
   // Cast an ID for this particular engine. If the object is in invalid format, it won't
   // get cast, and as a result check will fail
+  booleanTypeCast: function( definition, value,  fieldName, options, failedCasts ){
+
+    return !!value;
+
+    /*
+    console.log("*************** RECEIVED:", definition, fieldName, value, options );
+
+    // If it's an array, its value will depend on 
+    if( Array.isArray( value ) ){
+      //console.log("ARRAY");
+      //console.log( value.indexOf( definition.trueWhen ) );
+      if( value.indexOf( definition.trueWhen ) !== -1 ) return true;
+      else return false;
+    } else if( typeof( value ) === 'boolean' ){
+      //console.log("BOOLEAN");
+      return value;
+    } else {
+      //console.log("SOMETHING ELSE ");
+      return !! value;
+    }
+    */
+
+  },
+
+  // Cast an ID for this particular engine. If the object is in invalid format, it won't
+  // get cast, and as a result check will fail
   idTypeCast: function( definition, value,  fieldName, options, failedCasts ){
     var n = parseInt( value );
     if( isNaN( n ) ){
@@ -148,7 +174,6 @@ var SimpleSchema = declare( null, {
       return n;
     }
   },
-
 
 
   // Built-in parameters
