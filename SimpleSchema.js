@@ -18,12 +18,6 @@ var SimpleSchema = declare( null, {
   constructor: function( structure, options){
     this.structure = structure;
     this.options = typeof( options ) !== 'undefined' ? options : {};
-
-    // A list of fields in hash format
-    this.fieldsHash = {}
-    for( var k in this.structure ){
-      this.fieldsHash[ k ] = true;
-    }
   },
 
 
@@ -434,10 +428,22 @@ var SimpleSchema = declare( null, {
 
     options = typeof( options ) === 'undefined' ? {} : options;
 
+    // If `option.skipValidation` is set, then validation is actually skipped,
+    // an exact copy of `originalObject` is provided instead.
+    // This provides an easy way, for callers, to have validation as an option easily
+    // (they still call `validate()`, it just doesn't do anything)
+    if( options.skip ){
+      var t = {};
+      for( var k in originalObject ) t[ k ] = originalObject[ k ];
+      return cb( null, t, [] );
+    }
+
+
     self._cast( originalObject, options, function( err, castObject, failedCasts, failedRequired ){
       if( err ){
         cb( err );
       } else {
+
         self._params( castObject, originalObject, options, failedCasts, failedRequired, function( err, paramObject, errors ){
 
           Object.keys( failedCasts ).forEach( function( fieldName ){

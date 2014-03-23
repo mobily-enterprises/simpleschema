@@ -251,6 +251,11 @@ This option allows you to apply `schema.validate()` only to the fields that are 
 
 Note that only what "was there" was processed (it was cast and had parameters assigned).
 
+### `skip`
+
+If `skip` is true, validation will be skipped altogether. The callback will be called directly, no validation done. This is useful if you want to turn off validation in your program, but don't want to change the program's flow.
+
+Note that a _copy_ of the object will be passed to the callback (since the same thing would happen if `validate()` was called).
 
 ### `skipCast`
 
