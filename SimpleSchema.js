@@ -274,7 +274,7 @@ var SimpleSchema = declare( null, {
         continue;
       }
 
-      // Skip casting if value is `undefined` it's "protected" 
+      // Skip casting if value is `undefined` and it's "protected" 
       // == NOTE: TODO: Not sure we need this just yet===
       //if( definition.protected && typeof( object[ fieldName ] ) === 'undefined' ){
       //  continue;
