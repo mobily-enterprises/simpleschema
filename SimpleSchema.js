@@ -232,10 +232,12 @@ var SimpleSchema = declare( null, {
 
 
   // Options and values used:
-  //  * options.onlyObjectValues             -- Will apply cast for existing object's keys rather than the schema itself
-  //  * options.skipCast                     -- To know what casts need to be skipped
+  //  * options.onlyObjectValues              -- Will apply cast for existing object's keys rather than the 
+  //                                             schema itself
+  //  * options.skipCast                      -- To know what casts need to be skipped
   // 
-  //  * this.structure[ fieldName ].required -- To skip cast if it's `undefined` and it's NOT required
+  //  * this.structure[ fieldName ].required  -- To skip cast if it's `undefined` and it's NOT required
+  //  * this.structure[ fieldName ].protected -- To skip cast if it's `undefined` and it's protected
   //
   _cast: function( object, options, cb ){
  
@@ -272,6 +274,12 @@ var SimpleSchema = declare( null, {
         continue;
       }
 
+      // Skip casting if value is `undefined` it's "protected" 
+      // == NOTE: TODO: Not sure we need this just yet===
+      //if( definition.protected && typeof( object[ fieldName ] ) === 'undefined' ){
+      //  continue;
+      //}
+
       // Skip casting if value is `undefined` AND it IS required
       // Also, set failedRequired for that field, so that no param will be applied to it except `required`
       if( definition.required && typeof( object[ fieldName ] ) === 'undefined' ){
@@ -296,8 +304,9 @@ var SimpleSchema = declare( null, {
   },
 
   // Options and values used:
-  //  * options.onlyObjectValues             -- Will skip appling parameters if undefined and options.onlyObjectValues is true
-  //  * options.skipParams          -- Won't apply specific params for specific fields
+  //  * options.onlyObjectValues             -- Will skip appling parameters if undefined and 
+  //                                            options.onlyObjectValues is true
+  //  * options.skipParams                   -- Won't apply specific params for specific fields
 
   _params: function( object, objectBeforeCast, options, failedCasts, failedRequired, cb ){
   
@@ -350,8 +359,8 @@ var SimpleSchema = declare( null, {
 
           if( parameterName != 'type' && typeof( this[ parameterName + 'TypeParam' ]) === 'function' ){
 
-            // If `required` failed during casting, then `required` is the ONLY
-            // parameter that will actually get called
+            // If `required` failed during casting, then skip other parameters --
+            // `required` is the ONLY parameter that will actually get called
             if( !( failedRequired[ fieldName] && parameterName !== 'required' ) ){
 
               // Store the length of errors; later, it will use this to check that it hasn't grown
