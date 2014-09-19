@@ -468,6 +468,7 @@ var SimpleSchema = declare( null, {
   cleanup: function( object, parameterName ){
     newObject = {};
     for( var k in object ){
+       if( ! this.structure[ k ] ) throw( new Error("FATAL: attempted to deal with field " + k + " which is not in the schema"));
        if( this.structure[ k ][parameterName] ) {
          delete object [ k ]; 
          newObject[ k ] = object[ k ];
