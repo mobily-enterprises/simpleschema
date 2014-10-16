@@ -224,8 +224,13 @@ var SimpleSchema = declare( null, {
   },
 
   notEmptyTypeParam: function( p ){
+
     // if( ! Array.isArray( p.value ) && ( typeof( p.objectBeforeCast[ p.fieldName ]) === 'undefined' || p.objectBeforeCast[ p.fieldName ] == '')) {
-    if( ! Array.isArray( p.value ) &&  p.objectBeforeCast[ p.fieldName ] == '' && p.parameterValue) {
+//    if( ! Array.isArray( p.value ) &&  p.objectBeforeCast[ p.fieldName ] == '' && p.parameterValue) {
+    var bc = p.objectBeforeCast[ p.fieldName ];
+    var bcs = typeof( bc ) !== 'undefined' && bc.toString ? bc.toString() : ''; 
+    if( ! Array.isArray( p.value ) &&  typeof( bc ) !== 'undefined' && bcs === '' && p.parameterValue) {
+      console.log( p );
       p.errors.push( { field: p.fieldName, message: 'Field cannot be empty: ' + p.fieldName } );
     }
   },
