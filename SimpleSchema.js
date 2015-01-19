@@ -322,16 +322,8 @@ var SimpleSchema = declare( null, {
     var resultObject = {}
 
 
-   // First of all, if it's not in the schema, it's not allowed
+    // First of all, if it's not in the schema, it's not allowed
     for( var k in objectBeforeCast ){
-
-      // I ended up opting against this option
-      //if( Array.isArray( options.alwaysAllow ) && options.alwaysAllow.indexOf( k ) == -1  ){
-      //
-      //  if( typeof( this.structure[ k ] ) === 'undefined' ){
-      //    errors.push( { field: k, message: 'Field not allowed: ' + k } );
-      //  }
-      //}
 
       if( typeof( this.structure[ k ] ) === 'undefined' ){
         errors.push( { field: k, message: 'Field not allowed: ' + k } );
