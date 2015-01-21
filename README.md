@@ -315,6 +315,37 @@ The option `skipParams` is used when you want to decide which parameters you wan
       nickname: 'SOMETHING'
     }
 
+### `ignoreFields`
+
+The option `ignoreFields` is used when you want some fields to be completely ignored by SimpleSchema.
+
+    p = {
+      name: 'TOny',
+      surname: 'MOBILY',
+      age: '37',
+      id: 3424234424,
+      date: '2013-10-10',
+      list: [ 'one', 'two', 'three' ],
+      spurious: 10,
+    }
+
+    complexSchema.validate( p, { ignoreFields: [ 'spurious' ] }, function( err, newP, errors ){
+      // ...
+    });
+
+`newP` will be (note that 'SOMETHING' is still capital letters, and it's not trimmed):
+
+    { name: 'TONY',
+      surname: 'mobily',
+      age: 37,
+      id: 3424234424,
+      date: Thu Oct 10 2013 08:00:00 GMT+0800 (WST),
+      list: [ 'one', 'two', 'three' ] },
+      nickname: 'some'
+    }
+
+But more importantly, `errors` will be empty (whereas it would normally complain about the extra `spurious` field being there)
+
 
 ### `deserialize`
 
