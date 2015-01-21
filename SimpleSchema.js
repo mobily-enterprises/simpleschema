@@ -242,7 +242,7 @@ var SimpleSchema = declare( null, {
   //  * options.skipCast                      -- To know what casts need to be skipped
   // 
   //  * this.structure[ fieldName ].required  -- To skip cast if it's `undefined` and it's NOT required
-  //  * this.structure[ fieldName ].protected -- To skip cast if it's `undefined` and it's protected
+  //  //* this.structure[ fieldName ].protected -- To skip cast if it's `undefined` and it's protected
   //
   _cast: function( object, options, cb ){
  
@@ -256,8 +256,14 @@ var SimpleSchema = declare( null, {
     if( options.onlyObjectValues ) targetObject = object;
     else targetObject = this.structure;
 
+
+    var ignoreFields = options.ignoreFields || [];
+   
     for( var fieldName in targetObject ){
   
+      // The field is ignored: skip check
+      if( ignoreFields.indexOf( fieldName ) !== -1  ) continue;
+
       // Getting the definition
       definition = this.structure[ fieldName ];
 
@@ -312,6 +318,7 @@ var SimpleSchema = declare( null, {
   //  * options.onlyObjectValues             -- Will skip appling parameters if undefined and 
   //                                            options.onlyObjectValues is true
   //  * options.skipParams                   -- Won't apply specific params for specific fields
+  //  * options.
 
   _params: function( object, objectBeforeCast, options, failedCasts, failedRequired, cb ){
   
@@ -321,9 +328,12 @@ var SimpleSchema = declare( null, {
     var errors = [];
     var resultObject = {}
 
-
     // First of all, if it's not in the schema, it's not allowed
+    var ignoreFields = options.ignoreFields || [];
     for( var k in objectBeforeCast ){
+
+      // The field is ignored: skip check
+      if( ignoreFields.indexOf( k ) !== -1  ) continue;
 
       if( typeof( this.structure[ k ] ) === 'undefined' ){
         errors.push( { field: k, message: 'Field not allowed: ' + k } );
@@ -337,6 +347,9 @@ var SimpleSchema = declare( null, {
 
     // Scan schema
     for( var fieldName in this.structure ){
+
+      // Field is to be ignored: skip everything
+      if( ignoreFields.indexOf( k ) !== -1  ) continue;
 
       // The `onlyObjectValues` option is on: skip anything that is not in the object
       if( options.onlyObjectValues && typeof( object[ fieldName ] ) === 'undefined' ) continue;
