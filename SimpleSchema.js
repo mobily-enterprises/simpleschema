@@ -13,7 +13,7 @@ var
 , declare = require('simpledeclare')
 ;
 
-var SimpleSchema = declare( null, {
+var SimpleSchema = declare( Object, {
 
   constructor: function( structure, options){
     this.structure = structure;
