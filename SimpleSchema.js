@@ -80,7 +80,7 @@ var SimpleSchema = declare( Object, {
     var r = new Date( value );
     if( isNaN( r ) ){
       failedCasts[ fieldName ] = true;
-      return;
+      return value;
     }
   
     // return cast value
@@ -101,7 +101,7 @@ var SimpleSchema = declare( Object, {
 
       if( typeof( value ) !== 'string' ){
         failedCasts[ fieldName ] = true;
-        return;
+        return value;
       }
 
     // CASE #1: it's a string. Serialise it
@@ -115,7 +115,7 @@ var SimpleSchema = declare( Object, {
           return r;
       } catch( e ){
         failedCasts[ fieldName ] = true;
-        return;
+        return value;
       }
 
     // CASE #2: it's anything but a string. Serialise it.
@@ -123,7 +123,7 @@ var SimpleSchema = declare( Object, {
 
       if( typeof( value ) !== 'object' ){
         failedCasts[ fieldName ] = true;
-        return;
+        return value;
       }
 
       try {
@@ -134,7 +134,7 @@ var SimpleSchema = declare( Object, {
           return r;
       } catch( e ){
         failedCasts[ fieldName ] = true;
-        return;
+        return value;
       }
 
     // 
@@ -153,6 +153,7 @@ var SimpleSchema = declare( Object, {
     var n = parseInt( value );
     if( isNaN( n ) ){
       failedCasts[ fieldName ] = true;
+      return value;
     } else {
       return n;
     }
@@ -236,6 +237,7 @@ var SimpleSchema = declare( Object, {
   },
 
 
+  
   // Options and values used:
   //  * options.onlyObjectValues              -- Will apply cast for existing object's keys rather than the 
   //                                             schema itself
@@ -258,14 +260,22 @@ var SimpleSchema = declare( Object, {
 
 
     var ignoreFields = options.ignoreFields || [];
+    var ignoreAttributes = options.ignoreAttributes || [];
    
     for( var fieldName in targetObject ){
-  
-      // The field is ignored: skip check
-      if( ignoreFields.indexOf( fieldName ) !== -1  ) continue;
 
       // Getting the definition
       definition = this.structure[ fieldName ];
+
+      // The field is ignored: skip check
+      if( ignoreFields.indexOf( fieldName ) !== -1  ) continue;
+
+      // The field has one of the attributes to ignore
+      var ignored = false;
+      ignoreAttributes.forEach( function( attribute ){
+        if( definition[ attribute ] ) ignored = true;
+      })
+      if( ignored ) continue;
 
       // Copying the value over
       if( typeof( object[ fieldName ] ) !== 'undefined' ) resultObject[ fieldName ] = object[ fieldName ] ;
@@ -274,8 +284,7 @@ var SimpleSchema = declare( Object, {
       // then the missing definition mustn't be a problem.
       if( typeof( definition ) === 'undefined' && options.onlyObjectValues ) continue;
 
-      // Skip casting if so required by the skipCast array
-       
+      // Skip casting if so required by the skipCast array 
       if( Array.isArray( options.skipCast )  && options.skipCast.indexOf( fieldName ) != -1  ){
         continue;
       }
