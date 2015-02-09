@@ -258,9 +258,8 @@ var SimpleSchema = declare( Object, {
     if( options.onlyObjectValues ) targetObject = object;
     else targetObject = this.structure;
 
-
     var ignoreFields = options.ignoreFields || [];
-    var ignoreAttributes = options.ignoreAttributes || [];
+    var ignoreFieldsWithAttributes = options.ignoreFieldsWithAttributes || [];
    
     for( var fieldName in targetObject ){
 
@@ -270,9 +269,10 @@ var SimpleSchema = declare( Object, {
       // The field is ignored: skip check
       if( ignoreFields.indexOf( fieldName ) !== -1  ) continue;
 
-      // The field has one of the attributes to ignore
+      // Check if the field is to be ignored due to a field having a
+      // (truly) attribute listed in ignoreFieldsWithAttributes
       var ignored = false;
-      ignoreAttributes.forEach( function( attribute ){
+      ignoreFieldsWithAttributes.forEach( function( attribute ){
         if( definition[ attribute ] ) ignored = true;
       })
       if( ignored ) continue;
@@ -339,6 +339,8 @@ var SimpleSchema = declare( Object, {
 
     // First of all, if it's not in the schema, it's not allowed
     var ignoreFields = options.ignoreFields || [];
+    var ignoreFieldsWithAttributes = options.ignoreFieldsWithAttributes || [];
+   
     for( var k in objectBeforeCast ){
 
       // The field is ignored: skip check
@@ -359,6 +361,15 @@ var SimpleSchema = declare( Object, {
 
       // Field is to be ignored: skip everything
       if( ignoreFields.indexOf( k ) !== -1  ) continue;
+
+      // Check if the field is to be ignored due to a field having a
+      // (truly) attribute listed in ignoreFieldsWithAttributes
+      var definition = this.structure[ fieldName ];
+      var ignored = false;
+      ignoreFieldsWithAttributes.forEach( function( attribute ){
+        if( definition[ attribute ] ) ignored = true;
+      })
+      if( ignored ) continue;
 
       // The `onlyObjectValues` option is on: skip anything that is not in the object
       if( options.onlyObjectValues && typeof( object[ fieldName ] ) === 'undefined' ) continue;

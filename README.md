@@ -9,14 +9,12 @@ SimpleSchema is a required module when you try and use [JsonRestStores - Github]
 
 Main features:
 
-* It's easy to use
-* It's easy to extend
-* It's tailored for `req.body`: no complex schema-in-schema, etc.
+* It's easy to use and extend
+* It's tailored for `req.body`, built for casting simple (not nested) data strucures
 * Allows sync an async validation
-* It provides DB-specific layers to handle IDs
-* It's actively used in a complex project,  [JsonRestStores](https://github.com/mercmobily/JsonRestStores)
-* It down-to-earth code: no trickery and complex object structures
-* Aimed at casting/checking of web forms 
+* It provides DB-specific layers to handle database IDs
+* It's actively used in a complex project, [JsonRestStores](https://github.com/mercmobily/JsonRestStores)
+* It down-to-earth code: no trickery and complex object structures 
 * Fully unit-tested
 
 # Brief introduction
@@ -78,26 +76,27 @@ Here is a schema which covers _every_ single feature in terms of types and param
     // If there is an error, the validator function will need to return a string describing it.
     // otherwise, return nothing.
     var fieldValidatorFunc =  function( obj, value, fieldName ){
-      if( value == 0 ) return 'Age cannot be 0';
+      if( value == 130 ) return 'Age cannot be 130';
       return;
     };
 
     complexSchema = new Schema({
-      name:    { type: 'string', default: 'SOMETHING', uppercase: true, trim: 30, required: true, notEmpty: true },
+      name:    { type: 'string', default: 'SOMETHING', uppercase: true, trim: 4, required: true, notEmpty: true },
       surname: { type: 'string', lowercase: true },
-      age:     { type: 'number', default: 15, min: 10, max: 40, validator: fieldValidatorFunc },
+      age:     { type: 'number', default: 15, min: 0, max: 130, validator: fieldValidatorFunc, extraParameter: true },
       id:      { type: 'id' },
       date:    { type: 'date' },
       list:    { type: 'array' },
       various: { type: 'serialize', required: false },
+    }
     },
     {
       // Validation function called by schema.validate() for async validation
       validator: function( object, originalObject, castObject, options, done ){
         var errors = [];
 
-        if( object.name == 'Tony' ){
-           errors.push( { field: 'name', message: 'Tony is not an acceptable name' } );
+        if( object.surname == 'Smith' ){
+           errors.push( { field: 'name', message: 'Smith is not an acceptable name' } );
         }
         done( null, errors );
       }
@@ -117,6 +116,7 @@ Note:
  * The `validator()` function is applied at object level and is asynchronous.
 
 
+
 # Validating against a schema
 
 Validation happens with the `schema.validate()` function:
@@ -132,13 +132,13 @@ The `validate()` function takes the following parameters:
 Here is an example of basic usage:
 
     p = {
-      name: 'TOny',
+      name: 'TOnyName',
       surname: 'MOBILY',
       age: '37',
       id: 3424234424,
       date: '2013-10-10',
       list: [ 'one', 'two', 'three' ],
-      serialize: { a: 10, b: 20 }
+      various: { a: 10, b: 20 }
     }
 
     complexSchema.validate( p, function( err, newP, errors ){
@@ -153,12 +153,10 @@ Here is an example of basic usage:
       id: 3424234424,
       date: Thu Oct 10 2013 08:00:00 GMT+0800 (WST),
       list: [ 'one', 'two', 'three' ] },
-      nickname: 'some',
-      data: '{"a":10,"b":20}'
+      various: '{"a":10,"b":20}'
     }
 
-And `errors` will be empty. Note that `age` is now a proper Javascript number, `name` is uppercase and `surname` is lowercase. Note also that `nickname` is `some` (that is, `SOMETHING` in lower case and trimmed to 4 characters).
-
+And `errors` will be empty. Note that `name` is uppercase and trimmed to 4, `surname` is lowercase, `age` is now a proper Javascript number, `date` is a proper date.
 
 ## The unidirectional `serialize` parameter
 
@@ -203,7 +201,7 @@ For example:
               console.log( err );
             } else {
     
-              // At this point, newP.data is '{"a":10,"b":20}'
+              // At this point, newP.data is an object
               if( errors.length ){
                 console.log("Validation errors!");
                 console.log( errors );
@@ -222,7 +220,7 @@ For example:
 The `errors` variable is an array of objects; each element contains `field` (the field that had the error) and `message` (the error message for that field). For example:
 
     [
-      { field: 'age', message: 'Age cannot be 0' },
+      { field: 'age', message: 'Age cannot be 150' },
       { field: 'name', message: 'Name not valid' }
     ]
 
@@ -237,7 +235,7 @@ The second parameter of `schema.validate()` is an (optional) options object. Pos
 This option allows you to apply `schema.validate()` only to the fields that are actually defined in the object, regardless of what was required and what wasn't. This allows you to run `schema.validate()` against partial objects. For example:
 
     p = {
-      nickname: 'MERCMOBILY',
+      name: 'MERCMOBILY',
     }
 
     complexSchema.validate( p, { onlyObjectValues: true }, function( err, newP, errors ){
@@ -247,7 +245,7 @@ This option allows you to apply `schema.validate()` only to the fields that are 
 
 `newP` will be:
 
-    { nickname: 'MERC' }
+    { name: 'MERC' }
 
 Note that only what "was there" was processed (it was cast and had parameters assigned).
 
@@ -283,7 +281,6 @@ The option `skipCast` is used when you want to skip casting for specific fields.
       id: 3424234424,
       date: Thu Oct 10 2013 08:00:00 GMT+0800 (WST),
       list: [ 'one', 'two', 'three' ] },
-      nickname: 'some'
     }
 
 
@@ -292,7 +289,7 @@ The option `skipCast` is used when you want to skip casting for specific fields.
 The option `skipParams` is used when you want to decide which parameters you want to skip for which fields.
 
     p = {
-      name: 'TOny',
+      name: 'Chiara',
       surname: 'MOBILY',
       age: '37',
       id: 3424234424,
@@ -300,20 +297,21 @@ The option `skipParams` is used when you want to decide which parameters you wan
       list: [ 'one', 'two', 'three' ]
     }
 
-    complexSchema.validate( p, { skipParams: { nickname: [ 'lowercase', 'trim' ] } }, function( err, newP, errors ){
+    complexSchema.validate( p, { skipParams: { name: [ 'uppercase', 'trim' ] } }, function( err, newP, errors ){
       // ...
     });
 
-`newP` will be (note that 'SOMETHING' is still capital letters, and it's not trimmed):
+`newP` will be:
 
-    { name: 'TONY',
+    { name: 'Chiara',
       surname: 'mobily',
       age: 37,
       id: 3424234424,
       date: Thu Oct 10 2013 08:00:00 GMT+0800 (WST),
       list: [ 'one', 'two', 'three' ] },
-      nickname: 'SOMETHING'
     }
+
+Note that `name` is still unchanged: it didn't get lowercased, nor trimmed.
 
 ### `ignoreFields`
 
@@ -333,7 +331,7 @@ The option `ignoreFields` is used when you want some fields to be completely ign
       // ...
     });
 
-`newP` will be (note that 'SOMETHING' is still capital letters, and it's not trimmed):
+`newP` will be:
 
     { name: 'TONY',
       surname: 'mobily',
@@ -341,11 +339,37 @@ The option `ignoreFields` is used when you want some fields to be completely ign
       id: 3424234424,
       date: Thu Oct 10 2013 08:00:00 GMT+0800 (WST),
       list: [ 'one', 'two', 'three' ] },
-      nickname: 'some'
     }
 
-But more importantly, `errors` will be empty (whereas it would normally complain about the extra `spurious` field being there)
+Note that `spurious` was taken ot of the picture, and that `errors` is be empty (whereas it would normally complain about the extra `spurious` field being there)
 
+### `ignoreFieldsWithAttributes`
+
+The option `ignoreFieldsWithAttributes` is used when you want to ignore all fields that have, in the schema, one of the attributes set to `true`.
+
+    p = {
+      name: 'Tony',
+      surname: 'MOBILY',
+      age: '37',
+      id: 3424234424,
+      date: '2013-10-10',
+      list: [ 'one', 'two', 'three' ],
+    }
+
+    complexSchema.validate( p, { ignoreFieldsWithAttributes: [ 'extraParameter' ] }, function( err, newP, errors ){
+      // ...
+    });
+
+`newP` will be:
+
+    { name: 'TONY',
+      surname: 'mobily',
+      id: 3424234424,
+      date: Thu Oct 10 2013 08:00:00 GMT+0800 (WST),
+      list: [ 'one', 'two', 'three' ] },
+    }
+
+Note that `age` is out of the picture, because it has `extraParameter` set to true. 
 
 ### `deserialize`
 
@@ -355,15 +379,15 @@ This option, if set to `true`, will make `serialize` work the opposite way: data
 
 All field types and parameters are completely equal as far as `validate()` is concerned -- except one: `required`.
 
-The `required` parameter is special in two ways:
+When dealing with `required`, remember that:
 
-1) `validate()` won't attempt to cast an object value if it's `undefined` and `requred` is `false`. If `required` weren't special, casting (and therefore validation as a whole) would (erroneously) fail for values that are both optional and missing.
+1) `validate()` won't attempt to cast an object value if it's `undefined` and `required` is `false`. If `required` weren't special, casting (and therefore validation as a whole) would (erroneously) fail for values that are both optional and missing.
 
-2) If you want to safely skip `required` as a parameter, you will also need to turn off casting for that field. If you don't, then casting will possibly fail (as it will try to cast from `undefined`, with possibly strange results). If for example you wanted to make `id` optional rather than required, you would run validate this way:
+2) If the `required` constraint is not met, then other parameters (`max`, `default`, etc.) will not be applied (obviouly)
+
+3) If you want to safely skip `required` as a parameter, you will also need to turn off casting for that field. If you don't, then casting will possibly fail (as it will try to cast from `undefined`, with possibly strange results). If for example you wanted to override `id`'s schema definition making it optional rather than required, you would run `validate()` this way:
 
     complexSchema.validate( p, { skipCast: 'id', skipParams: { id: [ 'required' ] } }, function( err, newP, errors ){
-
-3) If the `required` constraint is not met, then other parameters (`max`, `default`, etc.) will not be applied
 
 ## (Per-field) sync and (object-wide) async validation
 
@@ -378,7 +402,7 @@ In the schema, you can define a field as follows:
 Where `fieldValidatorFunc` is:
 
     var fieldValidatorFunc =  function( obj, value, fieldName ){
-      if( value == 0 ) return 'Age cannot be 0';
+      if( value == 150 ) return 'Age cannot be 150';
       return;
     };
 
@@ -386,7 +410,7 @@ In `fieldValidatorFunc`, the `this` variable is the schema object. If the functi
 
 Note that this validation is synchronous. It's meant to be used to check field sanity.
 
-### Object-wide, async  validation
+### Object-wide, async validation
 
 The second parameter of the construction object is a hash. If the `validator` key is set, that function will be used for validation. One bonus of this function is that it's asynchronous. This function is there in cases where you need more complex, asynchronous validation that relies on running asynchronous functions.
 
@@ -458,9 +482,9 @@ You also have access to the `options` passed when you did run `validate()`. For 
 
 `validate()` actually works in two phases:
 
-  * Runs `_cast()` to cast object values to the right type. Casting is actually delegated to _casting functions_ (for example, `booleanTypeCast()` for the type `boolean`). `_cast()` will take into account the options `onlyObjectValues` (which will make `_cast()` only work on fields that actually already exist in the object to be cast, allowing you to cast partial objects) and `skipCast` (an array of fields for which casting will be skipped).
+  * Runs `_cast()` to cast object values to the right type. Casting is actually delegated to _casting functions_ (for example, `booleanTypeCast()` for the type `boolean`). `_cast()` will take into account the options `onlyObjectValues` (which will make `_cast()` only work on fields that actually already exist in the object to be cast, allowing you to cast partial objects), `skipCast` (an array of fields for which casting will be skipped), `ignoreFields` and `ignoreFieldsWithAttributes` (instructs which fields are to be ignored altogether).
 
-  * Runs `_params()` to apply schema parameters to the corresponding object fields. Just like `_cast()`, this function simply delegates all functionalities to the _schema params functions_ (for example, `uppercaseTypeParam()`). `_params()` will take into account of the options `onlyObjectValues` (applying parameters only to fields that already exist in the object) and `skipParams`, which allows you to decide what parameters should _not_ be applied to specific fields.
+  * Runs `_params()` to apply schema parameters to the corresponding object fields. Just like `_cast()`, this function simply delegates all functionalities to the _schema params functions_ (for example, `uppercaseTypeParam()`). `_params()` will take into account of the options `onlyObjectValues` (applying parameters only to fields that already exist in the object), `skipParams` (which allows you to decide what parameters should _not_ be applied to specific fields), `ignoreFields` and `ignoreFieldsWithAttributes` (instructs which fields are to be ignored altogether).
 
 ## Extending a schema
 
