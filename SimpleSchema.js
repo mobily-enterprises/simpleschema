@@ -231,7 +231,6 @@ var SimpleSchema = declare( Object, {
     var bc = p.objectBeforeCast[ p.fieldName ];
     var bcs = typeof( bc ) !== 'undefined' && bc !== null && bc.toString ? bc.toString() : ''; 
     if( ! Array.isArray( p.value ) &&  typeof( bc ) !== 'undefined' && bcs === '' && p.parameterValue) {
-      console.log( p );
       p.errors.push( { field: p.fieldName, message: 'Field cannot be empty: ' + p.fieldName } );
     }
   },
