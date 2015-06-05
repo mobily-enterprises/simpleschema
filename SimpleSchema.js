@@ -8,7 +8,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-var 
+var
   dummy
 , declare = require('simpledeclare')
 ;
@@ -68,7 +68,7 @@ var SimpleSchema = declare( Object, {
     return r;
 
   },
- 
+
   dateTypeCast:function( definition, value, fieldName, options, failedCasts ){
 
     // Undefined: return a new date object
@@ -82,14 +82,14 @@ var SimpleSchema = declare( Object, {
       failedCasts[ fieldName ] = true;
       return value;
     }
-  
+
     // return cast value
     return r;
-    
+
   },
 
   arrayTypeCast: function( definition, value, fieldName, options, failedCasts){
-    return Array.isArray( value ) ? value : [ value ]
+    return Array.isArray( value ) ? value : [ value ];
   },
 
 
@@ -137,8 +137,8 @@ var SimpleSchema = declare( Object, {
         return value;
       }
 
-    // 
-    } 
+    //
+    }
   },
 
   // Cast an ID for this particular engine. If the object is in invalid format, it won't
@@ -161,7 +161,7 @@ var SimpleSchema = declare( Object, {
 
 
   // Built-in parameters
- 
+
   minTypeParam: function( p ){
 
     if( p.definition.type === 'number' && p.value && p.value < p.parameterValue ){
@@ -229,26 +229,26 @@ var SimpleSchema = declare( Object, {
     // if( ! Array.isArray( p.value ) && ( typeof( p.objectBeforeCast[ p.fieldName ]) === 'undefined' || p.objectBeforeCast[ p.fieldName ] == '')) {
 //    if( ! Array.isArray( p.value ) &&  p.objectBeforeCast[ p.fieldName ] == '' && p.parameterValue) {
     var bc = p.objectBeforeCast[ p.fieldName ];
-    var bcs = typeof( bc ) !== 'undefined' && bc !== null && bc.toString ? bc.toString() : ''; 
+    var bcs = typeof( bc ) !== 'undefined' && bc !== null && bc.toString ? bc.toString() : '';
     if( ! Array.isArray( p.value ) &&  typeof( bc ) !== 'undefined' && bcs === '' && p.parameterValue) {
       p.errors.push( { field: p.fieldName, message: 'Field cannot be empty: ' + p.fieldName } );
     }
   },
 
 
-  
+
   // Options and values used:
-  //  * options.onlyObjectValues              -- Will apply cast for existing object's keys rather than the 
+  //  * options.onlyObjectValues              -- Will apply cast for existing object's keys rather than the
   //                                             schema itself
   //  * options.skipCast                      -- To know what casts need to be skipped
-  // 
+  //
   //  * this.structure[ fieldName ].required  -- To skip cast if it's `undefined` and it's NOT required
   //  //* this.structure[ fieldName ].protected -- To skip cast if it's `undefined` and it's protected
   //
   _cast: function( object, options, cb ){
- 
+
     var type, failedCasts = {}, failedRequired = {};
-    var options = typeof( options ) === 'undefined' ? {} : options;
+    options = typeof( options ) === 'undefined' ? {} : options;
     var targetObject;
     var resultObject = {};
 
@@ -259,7 +259,7 @@ var SimpleSchema = declare( Object, {
 
     var ignoreFields = options.ignoreFields || [];
     var ignoreFieldsWithAttributes = options.ignoreFieldsWithAttributes || [];
-   
+
     for( var fieldName in targetObject ){
 
       // Getting the definition
@@ -273,17 +273,17 @@ var SimpleSchema = declare( Object, {
       var ignored = false;
       ignoreFieldsWithAttributes.forEach( function( attribute ){
         if( definition[ attribute ] ) ignored = true;
-      })
+      });
       if( ignored ) continue;
 
       // Copying the value over
       if( typeof( object[ fieldName ] ) !== 'undefined' ) resultObject[ fieldName ] = object[ fieldName ] ;
- 
+
       // If the definition is undefined, and it's an object-values only check,
       // then the missing definition mustn't be a problem.
       if( typeof( definition ) === 'undefined' && options.onlyObjectValues ) continue;
 
-      // Skip casting if so required by the skipCast array 
+      // Skip casting if so required by the skipCast array
       if( Array.isArray( options.skipCast )  && options.skipCast.indexOf( fieldName ) != -1  ){
         continue;
       }
@@ -293,7 +293,7 @@ var SimpleSchema = declare( Object, {
         continue;
       }
 
-      // Skip casting if value is `undefined` and it's "protected" 
+      // Skip casting if value is `undefined` and it's "protected"
       // == NOTE: TODO: Not sure we need this just yet===
       //if( definition.protected && typeof( object[ fieldName ] ) === 'undefined' ){
       //  continue;
@@ -318,28 +318,28 @@ var SimpleSchema = declare( Object, {
     }
 
     // That's it -- return resulting Object
-    cb( null, resultObject, failedCasts, failedRequired ); 
+    cb( null, resultObject, failedCasts, failedRequired );
 
   },
 
   // Options and values used:
-  //  * options.onlyObjectValues             -- Will skip appling parameters if undefined and 
+  //  * options.onlyObjectValues             -- Will skip appling parameters if undefined and
   //                                            options.onlyObjectValues is true
   //  * options.skipParams                   -- Won't apply specific params for specific fields
   //  * options.
 
   _params: function( object, objectBeforeCast, options, failedCasts, failedRequired, cb ){
-  
+
     var type;
     var options = typeof(options) === 'undefined' ? {} : options;
-  
+
     var errors = [];
     var resultObject = {}
 
     // First of all, if it's not in the schema, it's not allowed
     var ignoreFields = options.ignoreFields || [];
     var ignoreFieldsWithAttributes = options.ignoreFieldsWithAttributes || [];
-   
+
     for( var k in objectBeforeCast ){
 
       // The field is ignored: skip check
@@ -351,7 +351,7 @@ var SimpleSchema = declare( Object, {
     }
 
     // Copying object into resultObject
-    for( var k in object ){
+    for( k in object ){
       if( typeof( object[ k ]) !== 'undefined' ) resultObject[ k ] = object[ k ];
     }
 
@@ -415,9 +415,9 @@ var SimpleSchema = declare( Object, {
               if( errors.length != errLength ) break;
             }
 
-          }   
+          }
         }
-      }   
+      }
     }
     cb( null, resultObject, errors );
 
@@ -437,7 +437,7 @@ var SimpleSchema = declare( Object, {
   //  * options.onlyObjectValues             -- Will apply cast for existing object's keys rather than the schema itself
   //  * options.skipCast                     -- To know what casts need to be skipped
   //  * options.skipParams                   -- Won't apply specific params for specific fields
-  // 
+  //
   //  * this.structure[ fieldName ].required -- To skip cast if it's `undefined` and it's NOT required
   //
   // Note that the only special parameter is 'required' -- it's only special because _cast() won't cast
@@ -445,12 +445,12 @@ var SimpleSchema = declare( Object, {
   //
   // This will run _cast, _param and _validate
   validate: function( originalObject, options, cb ){
-  
+
     var self = this;
- 
+
     if( typeof( cb ) === 'undefined' ){
       cb = options;
-      options = {}
+      options = {};
     }
 
     options = typeof( options ) === 'undefined' ? {} : options;
@@ -487,10 +487,10 @@ var SimpleSchema = declare( Object, {
               }
             }
           });
-        })
+        });
       }
     });
-    
+
   },
 
 
@@ -500,7 +500,7 @@ var SimpleSchema = declare( Object, {
        //if( ! this.structure[ k ] ) throw( new Error("FATAL: attempted to deal with field " + k + " which is not in the schema"));
        if( ! this.structure[ k ] ) continue;
        if( this.structure[ k ][parameterName] ) {
-         delete object [ k ]; 
+         delete object [ k ];
          newObject[ k ] = object[ k ];
        }
     }
@@ -523,5 +523,3 @@ SimpleSchema.makeId = function( object, cb ){
 
 
 exports = module.exports = SimpleSchema;
-
-
