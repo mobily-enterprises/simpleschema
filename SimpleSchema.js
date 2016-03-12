@@ -93,6 +93,63 @@ var SimpleSchema = declare( Object, {
   },
 
 
+  geoTypeCast: function( definition, value, fieldName, options, failedCasts){
+
+    var r = value;
+
+    if( typeof( r ) === 'string' ){
+      try {
+          // Attempt to stringify
+          r = JSON.parse( r );
+
+      } catch( e ){
+        failedCasts[ fieldName ] = true;
+        return value;
+      }
+    }
+
+    // Force the type to be the geoType regardless of what was passed
+    r.type = definition.geoType;
+
+    // Basically the only allowed key is `coordinates`
+    if( Object.keys( r ).length != 2 ){
+      failedCasts[ fieldName ] = true;
+      return value;
+    }
+
+    // There must be a `coordinates` element, and it needs to be an array
+    if( ! Array.isArray( r.coordinates ) ){
+      failedCasts[ fieldName ] = true;
+      return value;
+    }
+
+    // It's "point" by default
+    definition.geoType = definition.geoType || 'Point';
+
+    switch( definition.geoType ){
+      case 'Point':
+        // Every coordinate needs to be a number
+        if( r.coordinates.length != 2 || ! r.coordinates.every( function( i ){ return typeof( i ) === 'number' } ) ){
+          failedCasts[ fieldName ] = true;
+          return value;
+        }
+      break;
+
+      default:
+        throw( new Error("Invalid geoType: " + definition.geoType ) );
+      break;
+    }
+
+    // If it's taking data out, add the type to whatever was taken out
+    if( options.deserialize ){
+      r.type = definition.geoType;
+    }
+
+    // R is good and valid
+    return r;
+  },
+
+
   serializeTypeCast: function( definition, value, fieldName, options, failedCasts ){
 
     var r;
@@ -465,30 +522,35 @@ var SimpleSchema = declare( Object, {
       return cb( null, t, [] );
     }
 
-
     self._cast( originalObject, options, function( err, castObject, failedCasts, failedRequired ){
-      if( err ){
-        cb( err );
-      } else {
 
-        self._params( castObject, originalObject, options, failedCasts, failedRequired, function( err, paramObject, errors ){
+      if( err ) return cb( err );
 
-          Object.keys( failedCasts ).forEach( function( fieldName ){
-            errors.push( { field: fieldName, message: "Error during casting" } );
-          });
-          self._validate( paramObject, originalObject, castObject, options, function( err, validateErrors ) {
-            if( err ){
-              cb( err );
-            } else {
-              if( Array.isArray( validateErrors ) ){
-                cb( null, paramObject, Array.prototype.concat( errors, validateErrors ) );
-              } else {
-                cb( null, paramObject, errors );
-              }
-            }
-          });
+      self._params( castObject, originalObject, options, failedCasts, failedRequired, function( err, paramObject, errors ){
+        if( err ) return cb( err );
+
+        Object.keys( failedCasts ).forEach( function( fieldName ){
+          errors.push( { field: fieldName, message: "Error during casting" } );
         });
-      }
+
+        // If validation is to be skipped, the function ends here. Only casts were done!
+        if( options.skipValidation ){
+          return cb( null, paramObject, errors );
+        }
+
+        self._validate( paramObject, originalObject, castObject, options, function( err, validateErrors ) {
+          if( err ) return cb( err );
+
+          if( Array.isArray( validateErrors ) ){
+            cb( null, paramObject, Array.prototype.concat( errors, validateErrors ) );
+          } else {
+
+            cb( null, paramObject, errors );
+          }
+
+        });
+      });
+
     });
 
   },
