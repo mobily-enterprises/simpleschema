@@ -14,7 +14,7 @@ Main features:
 * Allows sync an async validation
 * It provides DB-specific layers to handle database IDs
 * It's actively used in a complex project, [JsonRestStores](https://github.com/mercmobily/JsonRestStores)
-* It down-to-earth code: no trickery and complex object structures 
+* It down-to-earth code: no trickery and complex object structures
 * Fully unit-tested
 
 # Brief introduction
@@ -88,6 +88,7 @@ Here is a schema which covers _every_ single feature in terms of types and param
       date:    { type: 'date' },
       list:    { type: 'array' },
       various: { type: 'serialize', required: false },
+      location:{ type: 'geo', geoType: 'Point'}
     }
     },
     {
@@ -114,6 +115,7 @@ Note:
  * `notEmpty` will fail if the  object's corresponding attribute was `v == ''` (note the weak `==`) and will never fail for arrays
  * If `fieldValidatorFunc` returns a string, then an error will be added for that field. Note that this function is synchronous
  * The `validator()` function is applied at object level and is asynchronous.
+ * Type `geo` only accepts `Point` as `GeoType` at this stage. The passed value is an object with key "coordinates", like so: `{ coordinates: [ x, y ] }`. You can also pass a string, which will be interpreted as JSON.
 
 
 
@@ -200,7 +202,7 @@ For example:
               console.log("Err!");
               console.log( err );
             } else {
-    
+
               // At this point, newP.data is an object
               if( errors.length ){
                 console.log("Validation errors!");
@@ -251,12 +253,15 @@ Note that only what "was there" was processed (it was cast and had parameters as
 
 ### `skip`
 
-If `skip` is true, validation will be skipped altogether. The callback will be called directly, no validation done. This is useful if you want to turn off validation in your program, but don't want to change the program's flow.
+If `skip` is true, BOTH casting and validation will be skipped altogether. The callback will be called directly, no validation done. This is useful if you want to turn off validation in your program, but don't want to change the program's flow.
 
 Note that a _copy_ of the object will be passed to the callback (since the same thing would happen if `validate()` was called).
 
-### `skipCast`
+### `skipValidation`
 
+If `skipValidation` is true, casting will happen but validation won't.
+
+### `skipCast`
 
 The option `skipCast` is used when you want to skip casting for specific fields.
 
@@ -369,7 +374,7 @@ The option `ignoreFieldsWithAttributes` is used when you want to ignore all fiel
       list: [ 'one', 'two', 'three' ] },
     }
 
-Note that `age` is out of the picture, because it has `extraParameter` set to true. 
+Note that `age` is out of the picture, because it has `extraParameter` set to true.
 
 ### `deserialize`
 
@@ -438,7 +443,7 @@ For example:
       }
     });
 
-Note that you have several versions of the object: `object` is the object once all casting and all parameters are applied to it; `originalObject` is the one passed originally to `validate()`; `castObject` is the object with only casting applied to it. 
+Note that you have several versions of the object: `object` is the object once all casting and all parameters are applied to it; `originalObject` is the one passed originally to `validate()`; `castObject` is the object with only casting applied to it.
 
 You also have access to the `options` passed when you did run `validate()`. For example, you could do:
 
@@ -500,7 +505,7 @@ For example:
       incrementByTypeParam: function( p ){
         if( typeof( p.value ) !== 'number' ) return; // Only works with numbers
         return p.value = p.value + p.parameterValue;
-      }, 
+      },
 
       booleanTypeCast: function( definition, value, fieldName, failedCasts ){
         return !!value;
@@ -570,7 +575,7 @@ The parameters passed to the function are:
 ### Extending parameters
 
 Parameters are based on the same principle. So, when `validate()` encounters:
- 
+
     surname: { type: 'string', lowercase: true },
 
 it will look for `this.lowercaseTypeParam()`, which is:
@@ -616,7 +621,7 @@ Parameters:
 
 ## `xxxTypeCast( definition, value, fieldName, options, failedCasts )`
 
-Helper function that will define the type `xxx`. Used when you have, in your schema, something like `field1: { type: 'xxx' }` 
+Helper function that will define the type `xxx`. Used when you have, in your schema, something like `field1: { type: 'xxx' }`
 
 # `xxxTypeParam( p )`
 
@@ -666,5 +671,3 @@ MongoSchemaMixin is available from [SimpleSchema-MongoDb](https://github.com/mer
 
 * The type `id` will be a proper MondoDb ObjectId object
 * The object _and_ class function `makeId()` will return a new MongoDb ObjectId object
-
-
