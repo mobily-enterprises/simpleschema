@@ -201,9 +201,12 @@ var SimpleSchema = declare( Object, {
   // Cast an ID for this particular engine. If the object is in invalid format, it won't
   // get cast, and as a result check will fail
   booleanTypeCast: function( definition, value,  fieldName, options, failedCasts ){
+
     if( typeof( value ) === 'string' ){
-      var stringFalseWhen = definition.stringFalseWhen || 'false';
-      return ! (value == stringFalseWhen );
+      if( value == ( definition.stringFalseWhen || 'false')  ) return false;
+      else if( ( value == ( definition.stringTrueWhen || 'true')  ) || (  value == ( definition.stringTrueWhen || 'on')  )  ) return true;
+      else return false;
+
     } else {
       return !!value;
     }
