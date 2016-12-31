@@ -178,10 +178,10 @@ var SimpleSchema = declare( Object, {
     // CASE #2: it's anything but a string. Serialise it.
     } else {
 
-      if( typeof( value ) !== 'object' ){
-        failedCasts[ fieldName ] = true;
-        return value;
-      }
+      //if( typeof( value ) !== 'object' ){
+      //  failedCasts[ fieldName ] = true;
+      //  return value;
+      //}
 
       try {
           // Attempt to stringify
