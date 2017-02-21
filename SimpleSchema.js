@@ -500,8 +500,10 @@ var SimpleSchema = declare( Object, {
   // Options and values used (the ones used by _cast() and _params() together)
   //
   //  * options.onlyObjectValues             -- Will apply cast for existing object's keys rather than the schema itself
+  //  * options.skip                         -- Skip the whole process
   //  * options.skipCast                     -- To know what casts need to be skipped
   //  * options.skipParams                   -- Won't apply specific params for specific fields
+  //  * options.skipValidation               -- Skip the call to validate()
   //
   //  * this.structure[ fieldName ].required -- To skip cast if it's `undefined` and it's NOT required
   //
