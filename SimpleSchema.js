@@ -161,8 +161,6 @@ var SimpleSchema = declare( Object, {
         return value;
       }
 
-    // CASE #1: it's a string. Serialise it
-    //if( typeof( value ) === 'string' ){
 
       try {
           // Attempt to stringify
@@ -175,13 +173,7 @@ var SimpleSchema = declare( Object, {
         return value;
       }
 
-    // CASE #2: it's anything but a string. Serialise it.
     } else {
-
-      //if( typeof( value ) !== 'object' ){
-      //  failedCasts[ fieldName ] = true;
-      //  return value;
-      //}
 
       try {
           // Attempt to stringify
