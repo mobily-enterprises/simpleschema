@@ -11,6 +11,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 var
   dummy
 , declare = require('simpledeclare')
+, CircularJSON = require('circular-json')
 ;
 
 var SimpleSchema = declare( Object, {
@@ -100,7 +101,7 @@ var SimpleSchema = declare( Object, {
     if( typeof( r ) === 'string' ){
       try {
           // Attempt to stringify
-          r = JSON.parse( r );
+          r = CircularJSON.parse( r );
 
       } catch( e ){
         failedCasts[ fieldName ] = true;
@@ -164,7 +165,7 @@ var SimpleSchema = declare( Object, {
 
       try {
           // Attempt to stringify
-          r = JSON.parse( value );
+          r = CircularJSON.parse( value );
 
           // It worked: return r
           return r;
@@ -176,8 +177,7 @@ var SimpleSchema = declare( Object, {
     } else {
 
       try {
-          // Attempt to stringify
-          r = JSON.stringify( value );
+          r = CircularJSON.stringify( value );
 
           // It worked: return r
           return r;
