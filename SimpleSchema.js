@@ -215,6 +215,20 @@ var SimpleSchema = declare( Object, {
       return n;
     }
   },
+  
+  jsonTypeCast: function(definition, value, fieldName, options, failedCasts) {
+    let json
+
+    try {
+      json = JSON.parse(value)
+    } catch (e) {
+      failedCasts[fieldName] = true
+      return
+    }
+
+    console.log('is a valid json')
+    return json
+  },
 
 
   // Built-in parameters
