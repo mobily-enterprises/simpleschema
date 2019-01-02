@@ -226,7 +226,6 @@ var SimpleSchema = declare( Object, {
       return
     }
 
-    console.log('is a valid json')
     return json
   },
 
