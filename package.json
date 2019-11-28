@@ -8,7 +8,7 @@
     "schema",
     "validation"
   ],
-  "main": "SimpleSchema.js",
+  "main": "simpleschema.js",
   "version": "2.0.0",
   "private": false,
   "repository": {
