@@ -9,17 +9,16 @@
     "validation"
   ],
   "main": "SimpleSchema.js",
-  "version": "0.3.22",
+  "version": "2.0.0",
   "private": false,
   "repository": {
     "type": "git",
-    "url": "https://github.com/mercmobily/SimpleSchema.git"
+    "url": "https://github.com/mercmobily/simpleschema.git"
   },
   "author": {
     "name": "Tony Mobily"
   },
   "dependencies": {
-    "circular-json": "^0.3.1",
-    "simpledeclare": "0.3.x"
+    "circular-json": "^0.3.1"
   }
 }
