@@ -12,9 +12,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
   [ ] Write tests
 */
 
-var CircularJSON = require('circular-json')
+const CircularJSON = require('circular-json')
 
-var SimpleSchema = class {
+const SimpleSchema = class {
   constructor (structure, options) {
     this.structure = structure
     this.options = options || {}
@@ -27,7 +27,7 @@ var SimpleSchema = class {
   }
 
   stringType (p) {
-    if (typeof p.value === 'undefined' || p.value === null ) return ''
+    if (typeof p.value === 'undefined' || p.value === null) return ''
 
     // No toString() available: failing to cast
     if (typeof (p.value.toString) === 'undefined') {
@@ -35,7 +35,7 @@ var SimpleSchema = class {
     }
 
     // Return cast value, trimmed by default (unless noTrim is passed to the definition)
-    let r = p.value.toString()
+    const r = p.value.toString()
     return p.definition.noTrim ? r : r.trim()
   }
 
@@ -47,7 +47,7 @@ var SimpleSchema = class {
     if (typeof (p.value) === 'undefined') return 0
 
     // If Number() returns NaN, fail
-    var r = Number(p.value)
+    const r = Number(p.value)
     if (isNaN(r)) {
       throw this._typeError(p.fieldName)
     }
@@ -59,7 +59,7 @@ var SimpleSchema = class {
   // This is like "number", but it will set timestamp as NULL for empty strings
   timestampType (p) {
     // If Number() returns NaN, fail
-    var r = Number(p.value)
+    const r = Number(p.value)
     if (isNaN(r)) {
       throw this._typeError(p.fieldName)
     }
@@ -75,7 +75,7 @@ var SimpleSchema = class {
     }
 
     // If new Date() returns NaN, date was not corect, fail
-    var r = new Date(p.value)
+    const r = new Date(p.value)
     if (isNaN(r)) {
       throw this._typeError(p.fieldName)
     }
@@ -85,11 +85,11 @@ var SimpleSchema = class {
   }
 
   arrayType (p) {
-    return Array.isArray(p.value) ? p.value : [ p.value ]
+    return Array.isArray(p.value) ? p.value : [p.value]
   }
 
   serializeType (p) {
-    var r
+    let r
 
     if (p.options.deserialize) {
       if (typeof (p.value) !== 'string') {
@@ -131,7 +131,7 @@ var SimpleSchema = class {
   // Cast an ID for this particular engine. If the object is in invalid format, it won't
   // get cast, and as a result check will fail
   idType (p) {
-    var n = parseInt(p.value)
+    const n = parseInt(p.value)
     if (isNaN(n)) {
       throw this._typeError(p.fieldName)
     } else {
@@ -167,7 +167,7 @@ var SimpleSchema = class {
       throw (new Error('Validator function needs to be a function, found: ' + typeof (p.parameterValue)))
     }
 
-    var r = p.parameterValue.call(this, p.object, p.object[ p.fieldName ], p.fieldName)
+    const r = p.parameterValue.call(this, p.object, p.object[p.fieldName], p.fieldName)
     if (typeof (r) === 'string') throw this._paramError(p.fieldName, r)
   }
 
@@ -175,6 +175,7 @@ var SimpleSchema = class {
     if (p.definition.type !== 'string' || typeof p.value !== 'string') return
     return p.value.toUpperCase()
   }
+
   lowercaseParam (p) {
     if (p.definition.type !== 'string' || typeof p.value !== 'string') return
     return p.value.toLowerCase()
@@ -192,33 +193,33 @@ var SimpleSchema = class {
   }
 
   defaultParam (p) {
-    var v
+    let v
     if (typeof (p.valueBeforeCast) === 'undefined') {
       if (typeof (p.parameterValue) === 'function') {
         v = p.parameterValue(p)
       } else {
         v = p.parameterValue
       }
-      p.object[ p.fieldName ] = v
+      p.object[p.fieldName] = v
     }
   }
 
   notEmptyParam (p) {
-    var bc = p.valueBeforeCast
-    var bcs = (typeof bc !== 'undefined' && bc !== null && bc.toString ? bc.toString() : '')
+    const bc = p.valueBeforeCast
+    const bcs = (typeof bc !== 'undefined' && bc !== null && bc.toString ? bc.toString() : '')
     if (p.parameterValue && !Array.isArray(p.value) && typeof (bc) !== 'undefined' && bcs === '') {
       throw this._paramError(p.fieldName, 'Field cannot be empty')
     }
   }
 
   _typeError (field) {
-    var e = new Error('Error with field: ' + field)
+    const e = new Error('Error with field: ' + field)
     e.errorObject = { field, message: 'Error during casting' }
     return e
   }
 
   _paramError (field, message) {
-    var e = new Error(message)
+    const e = new Error(message)
     e.errorObject = { field, message }
     return e
   }
@@ -231,32 +232,32 @@ var SimpleSchema = class {
   //  * options.emptyAsNull                  -- Empty string values will be cast to null (also as a per-field option)
   //  * options.canBeNull                    -- All values can be null (also as a per-field option)
   //
-  //  * Common parameters for every type (to be implemented)
+  //  * Common parameters for every type
   //    * required -- the field is required
   //    * canBeNull -- the "null" value is always accepted
   //    * emptyAsNull -- an empty string will be stored as null
   //
   // This will run _cast and _param
   validate (object, options) {
-    var errors = []
-    var skipBoth
-    var skipCast
-    var validatedObject
-    var targetObject
-    var fieldName
+    const errors = []
+    let skipBoth
+    let skipCast
+    let targetObject
+    let fieldName
+    let result
 
-    function emptyString(s) {
+    function emptyString (s) {
       return String(s) === ''
     }
 
     // Copy object over
-    validatedObject = Object.assign({}, object)
+    const validatedObject = Object.assign({}, object)
 
     options = options || {}
 
     // Check for spurious fields not in the schema
     for (fieldName in object) {
-      if (typeof this.structure[ fieldName ] === 'undefined') {
+      if (typeof this.structure[fieldName] === 'undefined') {
         errors.push({ field: fieldName, message: 'Field not allowed' })
       }
     }
@@ -267,7 +268,7 @@ var SimpleSchema = class {
     else targetObject = this.structure
 
     for (fieldName in targetObject) {
-      var definition = this.structure[ fieldName ]
+      const definition = this.structure[fieldName]
 
       if (!definition) continue
 
@@ -276,8 +277,8 @@ var SimpleSchema = class {
       skipCast = false
       skipBoth = false
 
-      var canBeNull = definition.canBeNull || options.canBeNull
-      var emptyAsNull = definition.emptyAsNull || options.emptyAsNull
+      const canBeNull = definition.canBeNull || options.canBeNull
+      const emptyAsNull = definition.emptyAsNull || options.emptyAsNull
 
       // Skip cast/param if so required by the skipFields array
       if (Array.isArray(options.skipFields) && options.skipFields.indexOf(fieldName) !== -1) {
@@ -287,26 +288,26 @@ var SimpleSchema = class {
       // Skip castParam if value is `undefined` AND it IS required (enriching error)
       // NOTE: this won't happen if 'required' is in the list of parameters to be skipped
 
-      if (definition.required && typeof (object[ fieldName ]) === 'undefined') {
-        if (!this._paramToBeSkipped(fieldName, 'required', options.skipParams)) {
+      if (definition.required && typeof (object[fieldName]) === 'undefined') {
+        if (!this._paramToBeSkipped('required', options.skipParams, fieldName)) {
           skipBoth = true
           errors.push({ field: fieldName, message: 'Field required: ' + fieldName })
         }
       }
 
       // Skip casting if value is `undefined` AND it's not required
-      if (!definition.required && typeof (object[ fieldName ]) === 'undefined') {
+      if (!definition.required && typeof (object[fieldName]) === 'undefined') {
         skipCast = true
       }
 
       // If it's null, and default is null or canBeNull is set, then skip everything else
-      if (object[ fieldName ] === null && (definition.default === null || canBeNull)) {
+      if (object[fieldName] === null && (definition.default === null || canBeNull)) {
         skipBoth = true
       }
 
       // If emptyAsNull is set, and it's an empty string, set it to null and skip everything else
-      if ( emptyAsNull && emptyString(object[ fieldName ])) {
-        validatedObject[ fieldName ] = null
+      if (emptyAsNull && emptyString(object[fieldName])) {
+        validatedObject[fieldName] = null
         skipBoth = true
       }
 
@@ -315,11 +316,11 @@ var SimpleSchema = class {
 
       if (!skipCast) {
         // Run the xxxType function for a specific type
-        if (typeof (this[ definition.type + 'Type' ]) === 'function') {
+        if (typeof (this[definition.type + 'Type']) === 'function') {
           try {
-            var result = this[ definition.type + 'Type' ]({
+            result = this[definition.type + 'Type']({
               definition,
-              value: object[ fieldName ],
+              value: object[fieldName],
               fieldName,
               object: validatedObject,
               objectBeforeCast: object,
@@ -328,55 +329,55 @@ var SimpleSchema = class {
           } catch (e) {
             errors.push(e.errorObject)
           }
-          if (typeof result !== 'undefined') validatedObject[ fieldName ] = result
+          if (typeof result !== 'undefined') validatedObject[fieldName] = result
         } else {
           throw (new Error('No casting function found, type probably wrong: ' + definition.type))
         }
       }
 
-      for (var parameterName in this.structure[ fieldName ]) {
+      for (const parameterName in this.structure[fieldName]) {
         //
-        // If it's to be skipped, we shall skip -- e.g. `options.skipParams == { tabId: 'required' }` to
+        // If it's to be skipped, we shall skip -- e.g. `options.skipParams == { tabId: ['required'] }` to
         // skip `required` parameter for `tabId` field
-        if (this._paramToBeSkipped(fieldName, parameterName, options.skipParams)) continue
+        if (this._paramToBeSkipped(parameterName, options.skipParams, fieldName)) continue
 
-        if (parameterName !== 'type' && typeof (this[ parameterName + 'Param' ]) === 'function') {
+        if (parameterName !== 'type' && typeof (this[parameterName + 'Param']) === 'function') {
           try {
-            result = this[ parameterName + 'Param' ]({
+            result = this[parameterName + 'Param']({
               definition,
-              value: validatedObject[ fieldName ],
+              value: validatedObject[fieldName],
               fieldName,
               object: validatedObject,
               objectBeforeCast: object,
-              valueBeforeCast: object[ fieldName ],
+              valueBeforeCast: object[fieldName],
               parameterName,
-              parameterValue: definition[ parameterName ],
+              parameterValue: definition[parameterName],
               options: options
             })
           } catch (e) {
             errors.push(e.errorObject)
           }
 
-          if (typeof (result) !== 'undefined') validatedObject[ fieldName ] = result
+          if (typeof (result) !== 'undefined') validatedObject[fieldName] = result
         }
       }
     }
     return { validatedObject, errors }
   }
 
-  _paramToBeSkipped (fieldName, parameterName, skipParams) {
+  _paramToBeSkipped (parameterName, skipParams, fieldName) {
     if (typeof (skipParams) !== 'object' || skipParams === null) return false
     if (Array.isArray(skipParams[fieldName]) && skipParams.indexOf(parameterName) !== -1) return true
     return false
   }
 
   cleanup (object, parameterName) {
-    var newObject = {}
-    for (var k in object) {
-      if (!this.structure[ k ]) continue
-      if (this.structure[ k ][parameterName]) {
-        delete object[ k ]
-        newObject[ k ] = object[ k ]
+    const newObject = {}
+    for (const k in object) {
+      if (!this.structure[k]) continue
+      if (this.structure[k][parameterName]) {
+        delete object[k]
+        newObject[k] = object[k]
       }
     }
     return newObject
@@ -386,7 +387,7 @@ var SimpleSchema = class {
 exports = module.exports = SimpleSchema
 
 /*
-var s = new SimpleSchema({
+let  s = new SimpleSchema({
   level: { type: 'number', default: 10 },
   name: { type: 'string', trim: 50 },
   surname: { type: 'string', required: true, trim: 10 },
