@@ -238,7 +238,7 @@ const SimpleSchema = class {
   //    * emptyAsNull -- an empty string will be stored as null
   //
   // This will run _cast and _param
-  validate (object, options) {
+  async validate (object, options) {
     const errors = []
     let skipBoth
     let skipCast
@@ -318,7 +318,7 @@ const SimpleSchema = class {
         // Run the xxxType function for a specific type
         if (typeof (this[definition.type + 'Type']) === 'function') {
           try {
-            result = this[definition.type + 'Type']({
+            result = await this[definition.type + 'Type']({
               definition,
               value: object[fieldName],
               fieldName,
@@ -343,7 +343,7 @@ const SimpleSchema = class {
 
         if (parameterName !== 'type' && typeof (this[parameterName + 'Param']) === 'function') {
           try {
-            result = this[parameterName + 'Param']({
+            result = await this[parameterName + 'Param']({
               definition,
               value: validatedObject[fieldName],
               fieldName,
