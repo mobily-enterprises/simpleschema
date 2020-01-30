@@ -167,7 +167,7 @@ const SimpleSchema = class {
       throw (new Error('Validator function needs to be a function, found: ' + typeof (p.parameterValue)))
     }
 
-    const r = p.parameterValue.call(this, p.object, p.object[p.fieldName], p.fieldName)
+    const r = p.parameterValue(p.object[p.fieldName], p.object, { schema: this, fieldName: p.fieldName})
     if (typeof (r) === 'string') throw this._paramError(p.fieldName, r)
   }
 
@@ -327,6 +327,7 @@ const SimpleSchema = class {
               options
             })
           } catch (e) {
+            if (!e.errorObject) throw e
             errors.push(e.errorObject)
           }
           if (typeof result !== 'undefined') validatedObject[fieldName] = result
@@ -355,6 +356,7 @@ const SimpleSchema = class {
               options: options
             })
           } catch (e) {
+            if (!e.errorObject) throw e
             errors.push(e.errorObject)
           }
 
