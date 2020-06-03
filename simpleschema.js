@@ -277,8 +277,13 @@ const SimpleSchema = class {
       skipCast = false
       skipBoth = false
 
-      const canBeNull = definition.canBeNull || options.canBeNull
-      const emptyAsNull = definition.emptyAsNull || options.emptyAsNull
+      let canBeNull
+      if (typeof definition.canBeNull !== 'undefined') canBeNull = definition.canBeNull
+      else canBeNull = !!options.canBeNull
+
+      let emptyAsNull
+      if (typeof definition.emptyAsNull !== 'undefined') emptyAsNull = definition.emptyAsNull
+      else emptyAsNull = !!options.emptyAsNull
 
       // Skip cast/param if so required by the skipFields array
       if (Array.isArray(options.skipFields) && options.skipFields.indexOf(fieldName) !== -1) {
