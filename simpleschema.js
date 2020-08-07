@@ -278,12 +278,15 @@ const SimpleSchema = class {
       skipBoth = false
 
       let canBeNull
-      if (typeof definition.canBeNull !== 'undefined') canBeNull = definition.canBeNull
-      else canBeNull = !!options.canBeNull
+      if (definition.default === null) canBeNull = true
+      else if (typeof definition.canBeNull !== 'undefined') canBeNull = definition.canBeNull
+      else if (typeof options.canBeNull !== 'undefined') canBeNull = !!options.canBeNull
+      else canBeNull = false
 
       let emptyAsNull
       if (typeof definition.emptyAsNull !== 'undefined') emptyAsNull = definition.emptyAsNull
-      else emptyAsNull = !!options.emptyAsNull
+      else if (typeof options.emptyAsNull !== 'undefined') emptyAsNull= !!options.emptyAsNull
+      else emptyAsNull = false
 
       // Skip cast/param if so required by the skipFields array
       if (Array.isArray(options.skipFields) && options.skipFields.indexOf(fieldName) !== -1) {
@@ -296,7 +299,7 @@ const SimpleSchema = class {
       if (definition.required && typeof (object[fieldName]) === 'undefined') {
         if (!this._paramToBeSkipped('required', options.skipParams, fieldName)) {
           skipBoth = true
-          errors.push({ field: fieldName, message: 'Field required: ' + fieldName })
+          errors.push({ field: fieldName, message: 'Field required' })
         }
       }
 
@@ -305,15 +308,20 @@ const SimpleSchema = class {
         skipCast = true
       }
 
-      // If it's null, and default is null or canBeNull is set, then skip everything else
-      if (object[fieldName] === null && (definition.default === null || canBeNull)) {
+      // If it's null, then really check: either canBeNull is true, or return with a message
+      if (object[fieldName] === null) {
         skipBoth = true
+        if (!canBeNull) {
+          errors.push({ field: fieldName, message: 'Field cannot be null' })
+        }
       }
 
-      // If emptyAsNull is set, and it's an empty string, set it to null and skip everything else
-      if (emptyAsNull && emptyString(object[fieldName])) {
-        validatedObject[fieldName] = null
-        skipBoth = true
+      // Empty string: check if it should be forced to null
+      if (emptyString(object[fieldName])) {
+        if (emptyAsNull) {
+          validatedObject[fieldName] = null
+          skipBoth = true
+        }
       }
 
       // If cast is skipped for whatever reason, params will never go through either
