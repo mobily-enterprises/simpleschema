@@ -308,19 +308,19 @@ const SimpleSchema = class {
         skipCast = true
       }
 
-      // If it's null, then really check: either canBeNull is true, or return with a message
-      if (object[fieldName] === null) {
-        skipBoth = true
-        if (!canBeNull) {
-          errors.push({ field: fieldName, message: 'Field cannot be null' })
-        }
-      }
-
       // Empty string: check if it should be forced to null
       if (emptyString(object[fieldName])) {
         if (emptyAsNull) {
           validatedObject[fieldName] = null
           skipBoth = true
+        }
+      }
+
+      // If it's null, then really check: either canBeNull is true, or return with a message
+      if (object[fieldName] === null) {
+        skipBoth = true
+        if (!canBeNull) {
+          errors.push({ field: fieldName, message: 'Field cannot be null' })
         }
       }
 
