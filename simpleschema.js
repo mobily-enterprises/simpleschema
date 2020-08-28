@@ -288,6 +288,11 @@ const SimpleSchema = class {
       else if (typeof options.emptyAsNull !== 'undefined') emptyAsNull= !!options.emptyAsNull
       else emptyAsNull = false
 
+      // If emptyAsNull is set, then canBeNull is implicitly set
+      if (emptyAsNull) {
+        canBeNull = true
+      }
+
       // Skip cast/param if so required by the skipFields array
       if (Array.isArray(options.skipFields) && options.skipFields.indexOf(fieldName) !== -1) {
         skipBoth = true
