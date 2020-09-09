@@ -200,7 +200,7 @@ const SimpleSchema = class {
       } else {
         v = p.parameterValue
       }
-      p.object[p.fieldName] = v
+      return v
     }
   }
 
@@ -342,7 +342,13 @@ const SimpleSchema = class {
               fieldName,
               object: validatedObject,
               objectBeforeCast: object,
-              options
+              valueBeforeCast: object[fieldName],
+              definitionName: definition.type,
+              options,
+              computedOptions: {
+                emptyAsNull,
+                canBeNull
+              }
             })
           } catch (e) {
             if (!e.errorObject) throw e
@@ -371,7 +377,11 @@ const SimpleSchema = class {
               valueBeforeCast: object[fieldName],
               parameterName,
               parameterValue: definition[parameterName],
-              options: options
+              options: options,
+              computedOptions: {
+                emptyAsNull,
+                canBeNull
+              }
             })
           } catch (e) {
             if (!e.errorObject) throw e
