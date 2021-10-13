@@ -68,29 +68,43 @@ const SimpleSchema = class {
     return r
   }
 
-  dateType (p) {
-    // Undefined: return a new date object
-    if (typeof (p.value) === 'undefined') {
-      return new Date()
-    }
-
-    // If new Date() returns NaN, date was not corect, fail
-    const r = new Date(p.value)
-    if (isNaN(r)) {
+  dateTimeType (p) {
+    if (!Number(p)) return null
+  
+    // If new Date() returns NaN, date was not correct, fail
+    const d = new Date(p.value)
+    if (isNaN(d)) {
       throw this._typeError(p.fieldName)
     }
 
+    // Inspired by https://stackoverflow.com/questions/58249596/how-to-insert-date-into-mysql-datetime-column-from-angular-using-node-js
+    // But needs checking/validating
+    const isoDateString = d.toISOString()
+    const isoDate = new Date(isoDateString)
+    const dateString = isoDate.toJSON().slice(0, 17).replace('T', ' ')
+    
     // return cast value
-    return r
+    return dateString
+  }
+
+  dateType (p) {
+    const r = this.dateTimeType(p)
+    if (r && typeof r === 'string') return r.slice(0,10)
+    else return r
   }
 
   arrayType (p) {
     return Array.isArray(p.value) ? p.value : [p.value]
   }
 
+  objectType (p) {
+    return p
+  }
+
   serializeType (p) {
     let r
 
+    /*
     if (p.options.deserialize) {
       if (typeof (p.value) !== 'string') {
         throw this._typeError(p.fieldName)
@@ -106,6 +120,7 @@ const SimpleSchema = class {
         throw this._typeError(p.fieldName)
       }
     } else {
+    */
       try {
         r = CircularJSON.stringify(p.value)
 
@@ -115,7 +130,9 @@ const SimpleSchema = class {
         throw this._typeError(p.fieldName)
       }
     //
+    /* 
     }
+    */
   }
 
   booleanType (p) {
@@ -190,6 +207,10 @@ const SimpleSchema = class {
     } else {
       if (Number.isInteger(Number(p.valueBeforeCast)) && String(Number(p.valueBeforeCast)).length > p.parameterValue) throw this._paramError(p.fieldName, 'Value out of range')
     }
+  }
+
+  lengthParam (p) {
+    return this.trimParam(p)
   }
 
   defaultParam (p) {
