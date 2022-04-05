@@ -64,6 +64,9 @@ const SimpleSchema = class {
       throw this._typeError(p.fieldName)
     }
 
+    // Return null (if allowed to be null)
+    if (!r && p.computedOptions.canBeNull) return null
+
     // Return cast value
     return r
   }
